@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <record id="view_mandate_form_inherit_yostesis_shared" model="ir.ui.view">
+    <field name="name">account.banking.mandate.form.yostesis.shared</field>
+    <field name="model">account.banking.mandate</field>
+    <field name="inherit_id" ref="account_banking_mandate.view_mandate_form"/>
+    <field name="arch" type="xml">
+
+      <xpath expr="//field[@name='partner_bank_id']" position="attributes">
+        <attribute name="domain">
+          ['&amp;',
+             '|', ('company_id','=', False), ('company_id','=', company_id),
+             '|',
+                ('partner_id','=', (mandate_for_partner_id or context.get('default_partner_id') or partner_id)),
+                ('shared_partner_ids','in', (mandate_for_partner_id or context.get('default_partner_id') or partner_id))
+          ]
+        </attribute>
+        <attribute name="options">{'create_name_field': 'acc_number'}</attribute>
+      </xpath>
+
+      <xpath expr="//field[@name='partner_id']" position="after">
+        <field name="mandate_for_partner_id" string="Empresa del mandato" placeholder="Selecciona empresa (titular o compartida)"/>
+      </xpath>
+
+      <xpath expr="//group[@name='main']" position="inside">
+        <field name="applies_to_partner_ids" widget="many2many_tags" readonly="1"
+               string="Aplica a (por cuenta compartida)"/>
+      </xpath>
+
+    </field>
+  </record>
+</odoo>

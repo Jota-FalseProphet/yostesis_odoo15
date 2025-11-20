@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="report_picking_patch_updated"
+                  inherit_id="indaws_custom_reports.report_packing_list_document"
+                  priority="40">
+            <xpath expr="//table" position="before">
+                <style>
+                  tr{page-break-inside:avoid;}
+                  .pl-head-row>th{border-bottom:2px solid #000!important;font-size:10px;line-height:1.2;}
+                  .pl-head-row>th span{font-size:9px;}
+
+                  .pl-col-totalbultos,td.pl-col-totalbultos{
+                      border-left:1px solid #000!important;
+                      border-right:none!important;
+                      width:18mm!important;
+                      max-width:18mm!important;
+                      padding-left:2mm!important;
+                      padding-right:2mm!important;
+                      white-space:nowrap;
+                  }
+                  .pl-col-totalbultos span{font-size:9px;}
+
+                  .pl-col-ref,td.pl-col-ref{
+                      width:45mm!important;
+                      max-width:45mm!important;
+                      white-space:normal;
+                      word-break:break-word;
+                  }
+                  tbody td.pl-col-ref{font-size:14px!important;line-height:1.15;}
+                </style>
+            </xpath>
+
+            <xpath expr="//table" position="attributes">
+                <attribute name="style" add="table-layout:fixed;"/>
+            </xpath>
+
+            <xpath expr="//table/thead" position="replace">
+                <thead>
+                    <tr class="pl-head-row" style="font-weight:700; text-align:center;">
+                        <th>PACKAGE<br/>TYPE<br/><span style="font-weight:500;">TIPO&#160;BULTO</span></th>
+                        <th class="pl-col-ref">REFERENCE<br/><span style="font-weight:500;">REFERENCIA</span></th>
+                        <th>PACKAGE<br/>NUMBER<br/><span style="font-weight:500;">Nº&#160;BULTO</span></th>
+                        <th>LENGTH&#160;cm<br/><span style="font-weight:400;">LARGO</span></th>
+                        <th>WIDTH&#160;cm<br/><span style="font-weight:400;">ANCHO</span></th>
+                        <th>HEIGHT&#160;cm<br/><span style="font-weight:500;">ALTO</span></th>
+                        <th>m³&#160;PACKAGE<br/><span style="font-weight:500;">m³&#160;BULTO</span></th>
+                        <th>kg&#160;PACKAGE<br/><span style="font-weight:500;">kg&#160;BULTO</span></th>
+                        <th class="pl-col-totalbultos"><span>TOTAL&#160;PACKAGES</span><br/><span style="font-weight:200;">BULTOS&#160;TOTALES</span></th>
+                        <th>TOTAL&#160;m³</th>
+                        <th>TOTAL&#160;kg</th>
+                    </tr>
+                </thead>
+            </xpath>
+
+            <xpath expr="//table/tbody" position="replace">
+                <tbody>
+                    <t t-foreach="docs" t-as="o">
+                        <t t-set="lines" t-value="o.get_group_lines()"/>
+                        <t t-set="total_lines" t-value="len(lines)"/>
+
+                        <t t-foreach="lines" t-as="g">
+                            <tr>
+                            <td t-esc="g['pkg_type']"/>
+                            <td class="pl-col-ref" t-esc="g['product'].default_code"/>
+
+                            <td class="text-center">
+                                <t t-esc="g.get('quantity_box','')"/>
+                            </td>
+
+                            <td class="text-right">
+                                <t t-esc="('%.2f' % g['length_cm']) if g['length_cm'] else ''"/>
+                            </td>
+                            <td class="text-right">
+                                <t t-esc="('%.2f' % g['width_cm'])  if g['width_cm']  else ''"/>
+                            </td>
+                            <td class="text-right">
+                                <t t-esc="('%.2f' % g['height_cm']) if g['height_cm'] else ''"/>
+                            </td>
+
+                            <td class="text-right">
+                                <t t-esc="('%.3f' % g['cbm_unit'])"/>
+                            </td>
+                            <td class="text-right">
+                                <t t-esc="('%.2f' % g['kg_unit'])"/>
+                            </td>
+
+                            <td class="text-center pl-col-totalbultos">
+                                <t t-set="qty_int" t-value="int(round(g['qty'] or 0))"/>
+                                <t t-esc="qty_int"/>
+                            </td>
+
+                            <td class="text-right">
+                                <t t-set="line_cbm_total" t-value="g['cbm_unit'] * g['qty']"/>
+                                <t t-esc="('%.3f' % line_cbm_total)"/>
+                            </td>
+                            <td class="text-right">
+                                <t t-set="line_kg_total" t-value="g['kg_unit'] * g['qty']"/>
+                                <t t-esc="('%.2f' % line_kg_total)"/>
+                            </td>
+                            </tr>
+                        </t>
+                    </t>
+                </tbody>
+            </xpath>
+        </template>
+
+        <template id="report_picking_footer_patch_updated"
+                  inherit_id="indaws_custom_reports.report_footer"
+                  priority="110">
+            <xpath expr="//div[@class='footer']/div" position="attributes">
+                <attribute name="class">text-right</attribute>
+                <attribute name="style" add="text-align:right;"/>
+            </xpath>
+
+            <xpath expr="//th[@name='th_boxes']" position="replace">
+                <th name="th_boxes" class="text-left"
+                    style="width:5cm;font-weight:bold;">TOTAL&#160;PACKING&#160;LIST</th>
+            </xpath>
+
+            <xpath expr="//th[@name='th_quantity']" position="replace">
+              <th name="th_quantity" class="text-center"
+                  style="width:4cm;border-bottom:1px solid #000;">
+                  TOTAL&#160;QUANTITY<br/>
+              <span style="font-weight:500;">CANTIDAD&#160;TOTAL</span>
+              </th>
+            </xpath>
+
+            <xpath expr="//th[@name='th_lb_total']" position="replace">
+              <th name="th_lb_total" class="text-center"
+                  style="width:4cm;border-bottom:1px solid #000;">
+                  TOTAL&#160;WEIGHT&#160;(kg)<br/>
+              <span style="font-weight:500;">PESO&#160;TOTAL&#160;(Kg)</span>
+              </th>
+            </xpath>
+
+            <xpath expr="//th[@name='th_lb_total']" position="after">
+            <th name="th_cbm_total" class="text-center"
+                style="width:4cm;border-bottom:1px solid #000;">
+                TOTAL&#160;VOLUME&#160;(m³)<br/>
+                <span style="font-weight:500;">VOL&#160;TOTAL&#160;(m³)</span>
+            </th>
+            </xpath>
+
+            <xpath expr="//td[@name='td_quantity_footer']" position="replace">
+                <td name="td_quantity_footer" class="text-center">
+                    <t t-set="lines" t-value="o.get_group_lines()"/>
+                    <t t-set="qty_total" t-value="sum([int(round(g['qty'] or 0)) for g in lines])"/>
+                    <t t-esc="qty_total"/>
+                </td>
+            </xpath>
+
+
+            <xpath expr="//td[@name='td_lb_total']/span" position="attributes">
+                <attribute name="t-field">o.kg_paq_total_pr</attribute>
+                <attribute name="t-options">{'widget':'float','precision_digits':2}</attribute>
+            </xpath>
+
+            <xpath expr="//td[@name='td_lb_total']" position="after">
+              <td name="td_cbm_total" class="text-center">
+                <span t-field="o.cbm_total"
+                      t-options="{'widget':'float','precision_digits':4}"/>
+              </td>
+            </xpath>
+
+            <xpath expr="//div[@class='footer']//table" position="attributes">
+                <attribute name="style" add="margin-left:auto;"/>
+            </xpath>
+        </template>
+
+        <template id="report_picking_footer_patch_hide_qty_boxes"
+                  inherit_id="indaws_custom_reports.report_footer"
+                  priority="120">
+            <xpath expr="//th[@name='th_quantity_box']" position="attributes">
+                <attribute name="style" add="display:none!important;width:0!important;padding:0!important;border:none!important;"/>
+            </xpath>
+            <xpath expr="//td[@name='td_quantity_box']" position="attributes">
+                <attribute name="style" add="display:none!important;width:0!important;padding:0!important;border:none!important;"/>
+            </xpath>
+        </template>
+
+        <template id="report_picking_footer_patch_remove_qty_boxes"
+                  inherit_id="indaws_custom_reports.report_footer"
+                  priority="130">
+            <xpath expr="//th[@name='th_quantity_box']" position="replace">
+                <t/>
+            </xpath>
+            <xpath expr="//td[@name='td_quantity_box']" position="replace">
+                <t/>
+            </xpath>
+        </template>
+
+    </data>
+</odoo>

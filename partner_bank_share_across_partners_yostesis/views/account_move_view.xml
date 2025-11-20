@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- En facturas/bills, permitir seleccionar cuentas propias o compartidas -->
+  <record id="view_move_form_inherit_bank_domain" model="ir.ui.view">
+    <field name="name">account.move.form.bank.domain.shared</field>
+    <field name="model">account.move</field>
+    <field name="inherit_id" ref="account.view_move_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='partner_bank_id']" position="attributes">
+        <attribute name="domain">['|', ('partner_id','=', commercial_partner_id), ('shared_partner_ids','in', commercial_partner_id)]</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>

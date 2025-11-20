@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="0">
+
+    <!-- Mantiene tu lógica de qty / uom / dp_amount -->
+    <template id="pmx_report_invoice_hide_qty_discounts_v3"
+              inherit_id="account.report_invoice_document"
+              priority="2000">
+
+      <!-- tu celda de qty, igual que ya la tenías -->
+      <xpath expr="//table[@name='invoice_line_table']//td[@name='account_invoice_line_name']/following-sibling::td[1]"
+             position="replace">
+        <td class="text-right" name="pmx_qty_cell">
+          <t t-if="o._pmx_is_dp_deduction_line(line)">
+            <span class="text-nowrap"
+                  t-esc="o._pmx_dp_amount_for_line(line)"
+                  t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+          </t>
+          <t t-elif="o._pmx_show_qty_as_integer(line)">
+            <span t-esc="line.quantity" t-options="{'widget': 'integer'}"/>
+          </t>
+          <t t-else="">
+            <span t-field="line.quantity"/>
+            <span t-field="line.product_uom_id" groups="uom.group_uom"/>
+          </t>
+        </td>
+      </xpath>
+
+      <!-- REEMPLAZA SOLO el discount estándar (este span sí existe en la base) -->
+      <xpath expr="//table[@name='invoice_line_table']//tbody//span[@t-field='line.discount']"
+             position="replace">
+        <t t-if="o._pmx_is_dp_deduction_line(line)"><span/></t>
+        <t t-else=""><span class="text-nowrap" t-field="line.discount"/></t>
+      </xpath>
+
+      <!-- INSERTA después del discount estándar tus discount2 y discount3 -->
+      <xpath expr="//table[@name='invoice_line_table']//tbody//span[@t-field='line.discount']"
+             position="after">
+        <!-- discount2 -->
+        <t t-if="'discount2' in line._fields">
+          <t t-if="o._pmx_is_dp_deduction_line(line)"><span/></t>
+          <t t-else=""><span class="text-nowrap" t-field="line.discount2"/></t>
+        </t>
+        <!-- discount3 -->
+        <t t-if="'discount3' in line._fields">
+          <t t-if="o._pmx_is_dp_deduction_line(line)"><span/></t>
+          <t t-else=""><span class="text-nowrap" t-field="line.discount3"/></t>
+        </t>
+      </xpath>
+
+    </template>
+
+  </data>
+</odoo>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- Heredamos la plantilla del reporte de factura -->
+  <template id="report_invoice_advance_totals" inherit_id="account.report_invoice_document">
+    
+    <!-- Buscamos la tabla que contiene el llamado a los totales de impuestos -->
+    <xpath expr="//table[contains(@class, 'table-sm') and descendant::t[@t-call='account.document_tax_totals']]" position="inside">
+      <t t-set="advance_applied" t-value="o._get_advance_applied_amount()"/>
+      
+      <t t-if="advance_applied">
+        <tr>
+          <td>
+            <span>Anticipos aplicados</span>
+          </td>
+          <td class="text-right">
+            -<span t-esc="advance_applied" t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+          </td>
+        </tr>
+        <tr class="border-black font-weight-bold">
+          <td>
+            <span>Total pendiente tras anticipos</span>
+          </td>
+          <td class="text-right">
+            <span t-field="o.amount_residual"/>
+          </td>
+        </tr>
+      </t>
+    </xpath>
+
+  </template>
+</odoo>

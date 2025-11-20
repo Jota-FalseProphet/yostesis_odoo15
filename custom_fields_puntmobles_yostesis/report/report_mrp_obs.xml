@@ -1,0 +1,10 @@
+<odoo>
+  <template id="report_mrp_obs_inline"
+            inherit_id="mrp.report_mrporder">
+    <xpath expr="//span[@t-field='o.product_id']" position="after">
+      <small t-if="o.sale_line_id and o.sale_line_id.x_studio_obs" class="text-muted">
+        <br/><t t-esc="o.sale_line_id.x_studio_obs"/>
+      </small>
+    </xpath>
+  </template>
+</odoo>

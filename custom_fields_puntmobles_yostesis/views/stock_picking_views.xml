@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_picking_form_retenido_transportista" model="ir.ui.view">
+    <field name="name">stock.picking.retenido.transportista</field>
+    <field name="model">stock.picking</field>
+    <field name="inherit_id" ref="stock.view_picking_form"/>
+    <field name="priority">2000</field>
+    <field name="arch" type="xml">
+        <!-- Check de retendido por el transportista stock_picking.py/ -->
+                <!-- retenido_transportista = fields.Boolean(string="Retenido transportista") -->
+      <xpath expr="//sheet//field[@name='carrier_id']" position="after">
+        <field name="retenido_transportista"
+               attrs="{'invisible': [('picking_type_code', '!=', 'outgoing')]}"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="view_picking_form_vendor_delivery_note" model="ir.ui.view">
+    <field name="name">stock.picking.vendor.delivery.note</field>
+    <field name="model">stock.picking</field>
+    <field name="inherit_id" ref="stock.view_picking_form"/>
+    <field name="priority">3000</field>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet//field[@name='owner_id']" position="after">
+        <field name="vendor_delivery_note"
+               attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

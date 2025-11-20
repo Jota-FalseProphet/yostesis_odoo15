@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data noupdate="0">
+    <template id="fix_sale_report_custom_attr_values"
+              inherit_id="studio_customization.odoo_studio_studio_c_e73cf33e-8c8c-4f8a-9a0d-56558e2d9a9a"
+              priority="999">
+
+      <xpath expr="//*[@t-field and contains(@t-field, 'product_custom_attribute_value_ids')]"
+             position="replace">
+        <t t-set="vals" t-value="table_line.product_custom_attribute_value_ids.mapped('custom_value') or []"/>
+        <t t-set="vals" t-value="[str(v) for v in vals if v]"/>
+        <span t-if="vals"
+              t-esc="', '.join(vals)"
+              style="color:#9C0000"
+              class="o_italic"/>
+      </xpath>
+
+    </template>
+  </data>
+</odoo>

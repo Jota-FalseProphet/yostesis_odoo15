@@ -1,0 +1,22 @@
+<odoo>
+  <record id="view_picking_form_safe_back2draft" model="ir.ui.view">
+    <field name="name">stock.picking.form.safe.back2draft</field>
+    <field name="model">stock.picking</field>
+    <field name="inherit_id" ref="stock.view_picking_form"/>
+    <field name="arch" type="xml">
+
+      <xpath expr="//form" position="inside">
+        <field name="is_broken_picking" invisible="1"/>
+      </xpath>
+
+      <xpath expr="//header" position="inside">
+        <button name="action_safe_back2draft"
+                string="Restaurar albarán"
+                type="object"
+                class="oe_highlight"
+                attrs="{'invisible': ['|','|', ('is_broken_picking','=', False), ('state','=','done'), ('state','=','draft')]}"/>
+      </xpath>
+
+    </field>
+  </record>
+</odoo>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_change_sale_customer_wizard" model="ir.ui.view">
+    <field name="name">change.sale.customer.wizard.form</field>
+    <field name="model">change.sale.customer.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Cambiar cliente del pedido">
+        <group>
+          <field name="sale_id" string="Pedido" readonly="1"/>
+          <field name="new_partner_id" string="Nuevo cliente" required="1" options="{'no_create': False}"/>
+        </group>
+
+        <group string="Opciones">
+          <field name="ui_addresses_taxes" string="Direcciones, fiscalidad y logística"/>
+          <div class="text-muted" attrs="{'invisible': [('ui_addresses_taxes','=', False)]}">
+            Actualiza Facturación y Entrega, posición fiscal e impuestos, condiciones de pago
+            y el partner en albaranes abiertos y en el grupo de aprovisionamiento.
+          </div>
+
+          <field name="ui_tariff_prices" string="Tarifa y precios"/>
+          <div class="text-muted" attrs="{'invisible': [('ui_tariff_prices','=', False)]}">
+            Adopta la tarifa del nuevo cliente y recalcula precios y descuentos de las líneas.
+          </div>
+
+          <field name="update_followers" string="Actualizar seguidores (chatter)"/>
+
+          <field name="note_reason" string="Motivo del cambio" placeholder="Explica brevemente el motivo (opcional)"/>
+        </group>
+
+        <group attrs="{'invisible': True}">
+          <field name="update_open_pickings"/>
+          <field name="update_proc_group"/>
+          <field name="update_addresses"/>
+          <field name="recompute_taxes"/>
+          <field name="use_partner_pricelist"/>
+          <field name="recompute_prices"/>
+          <field name="apply_billing_defaults"/>
+          <field name="force_breakdown_discount"/>
+        </group>
+
+        <footer>
+          <button string="Aplicar" type="object" name="action_apply" class="btn-primary"/>
+          <button string="Cancelar" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <act_window id="action_change_sale_customer_wizard"
+              name="Cambiar cliente"
+              res_model="change.sale.customer.wizard"
+              view_mode="form"
+              target="new"
+              context="{'default_sale_id': active_id}"/>
+</odoo>

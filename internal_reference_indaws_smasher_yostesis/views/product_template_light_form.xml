@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+<!-- quito imagenes que se cargan de fondo pero no son relevantes -->
+  <record id="view_product_template_form_light" model="ir.ui.view">
+    <field name="name">product.template.form.light</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="product.product_template_only_form_view"/>
+    <field name="priority" eval="99"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='image_1920']" position="replace"/>
+      <xpath expr="//div[@class='oe_chatter']" position="replace"/>
+    </field>
+  </record>
+</odoo>

@@ -1,0 +1,15 @@
+<odoo>
+  <record id="mrp_workorder_tree_add_obs" model="ir.ui.view">
+    <field name="name">mrp.workorder.tree.add.obs</field>
+    <field name="model">mrp.workorder</field>
+    <field name="inherit_id" ref="mrp.mrp_production_workorder_tree_view"/>
+    <!-- Subimos la prioridad para que se aplique DESPUÉS de la vista que añade production_id -->
+    <field name="priority" eval="20"/>
+    <field name="arch" type="xml">
+      <!-- Insertamos la columna justo después de production_id -->
+      <xpath expr="//tree/field[@name='production_id']" position="after">
+        <field name="x_sale_line_obs" string="Obs Fabr Producto" optional="show"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

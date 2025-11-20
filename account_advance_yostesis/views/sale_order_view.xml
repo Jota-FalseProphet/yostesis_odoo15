@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_order_form_account_advance_yostesis" model="ir.ui.view">
+    <field name="name">sale.order.form.account.advance.yostesis</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_order_form"/>
+    <field name="arch" type="xml">
+
+      <!-- Insertamos el bloque de anticipos justo después del subtotal (group name="sale_total") -->
+      <xpath expr="//page[@name='order_lines']//group[@name='sale_total']" position="after">
+        <group name="yostesis_anticipos" string="Anticipos" col="4" class="o_group_yostesis_anticipos">
+          <field name="advance_amount_paid_order" readonly="1"/>
+          <field name="advance_amount_paid_applied" readonly="1"/>
+          <field name="advance_amount_paid_available" readonly="1"/>
+          <field name="commercial_balance_after_advances" readonly="1"/>
+          <!-- Solo mostrar saldo global si no hay anticipos propios -->
+          <field name="advance_amount_partner_global" readonly="1"
+                 attrs="{'invisible': [('advance_amount_paid_order','&gt;',0)]}"/>
+        </group>
+        <div class="o_form_label o_light_text" colspan="4">
+          Los anticipos son informativos hasta que se facture. El saldo comercial puede ser negativo si hay anticipo excedente.
+        </div>
+      </xpath>
+
+    </field>
+  </record>
+</odoo>

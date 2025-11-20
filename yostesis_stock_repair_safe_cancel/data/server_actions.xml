@@ -1,0 +1,12 @@
+<odoo>
+  <record id="action_restore_picking" model="ir.actions.server">
+    <field name="name">Restaurar albarán (seguro)</field>
+    <field name="model_id" ref="stock.model_stock_picking"/>
+    <field name="state">code</field>
+    <field name="binding_model_id" ref="stock.model_stock_picking"/>
+    <field name="binding_type">action</field>
+    <field name="binding_view_types">form</field>
+    <field name="code">records.action_safe_back2draft()</field>
+    <field name="sequence">5</field>
+  </record>
+</odoo>

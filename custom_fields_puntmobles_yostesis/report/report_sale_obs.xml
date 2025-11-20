@@ -1,0 +1,13 @@
+<odoo>
+  <template id="report_saleorder_document_inherit_obs_inline"
+            inherit_id="sale.report_saleorder_document">
+    <!-- Inserta la obs pequeñita justo debajo de la descripción de cada línea normal -->
+    <xpath expr="//t[contains(@t-foreach,'order_line')]//span[@t-field='line.name']"
+           position="after">
+      <small t-if="line and not line.display_type and line.x_studio_obs"
+             class="text-muted">
+        <br/><t t-esc="line.x_studio_obs"/>
+      </small>
+    </xpath>
+  </template>
+</odoo>

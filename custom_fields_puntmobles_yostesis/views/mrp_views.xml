@@ -1,0 +1,12 @@
+<odoo>
+  <record id="mrp_production_form_obs" model="ir.ui.view">
+    <field name="name">mrp.production.form.obs</field>
+    <field name="model">mrp.production</field>
+    <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='bom_id']" position="after">
+        <field name="x_studio_obs_fabrica_del_producto" readonly="1" class="text-danger"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

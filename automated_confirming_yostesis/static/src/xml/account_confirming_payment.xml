@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="yostesis_confirming_qweb" xml:space="preserve">
+
+    <!-- Extensión del template JS de Odoo 15: ShowPaymentInfo -->
+    <t t-name="yostesis_confirming.ShowPaymentInfo"
+       t-inherit="ShowPaymentInfo"
+       t-inherit-mode="extension">
+
+        <!-- Cambiamos sólo la etiqueta de pago -->
+        <xpath expr="//i[contains(@class, 'o_payment_label')]" position="replace">
+            <i class="o_field_widget text-right o_payment_label">
+                <!-- Si es línea de confirming y tenemos 'name' desde Python, usarlo -->
+                <t t-if="line.get('is_confirming') and line.get('name')">
+                    <t t-esc="line['name']"/>
+                </t>
+                <!-- Resto de pagos: comportamiento estándar -->
+                <t t-else="">
+                    <t t-translation="on">Paid on</t>
+                    <t t-esc="line.date" t-options="{'widget': 'date'}"/>
+                </t>
+            </i>
+        </xpath>
+
+    </t>
+
+</templates>

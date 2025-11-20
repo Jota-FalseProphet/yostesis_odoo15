@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <record id="view_partner_form_inherit_bank_sharing" model="ir.ui.view">
+    <field name="name">res.partner.form.bank.sharing</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="account.view_partner_property_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='bank_ids']" position="after">
+        <group string="Cuentas bancarias compartidas">
+          <field name="shared_bank_ids"
+                 widget="many2many_tags"
+                 domain="[('partner_id','!=', id)]"/>
+          <label for="shared_bank_ids"
+                 class="o_form_label text-muted"
+                 string="Estas cuentas pertenecen a otros contactos, pero este partner podrá usarlas en facturas y pagos."/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+</odoo>

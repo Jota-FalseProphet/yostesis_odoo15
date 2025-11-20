@@ -1,0 +1,100 @@
+<odoo>
+    <record id="res_config_settings_view_form_yostesis_confirming" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.yostesis.confirming</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Debajo del bloque de Customer Invoices -->
+            <xpath expr="//div[@id='invoicing_settings']" position="after">
+
+                <h2>Confirming - Factoring</h2>
+                <div class="row mt16 o_settings_container" id="confirming_settings">
+
+                    <!-- Caja 1: modo de pago + fecha desde -->
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+
+                            <!-- Modo de pago -->
+                            <label for="confirming_payment_mode_id"/>
+                            <div class="text-muted mb8">
+                                Modo de cobro que utilizará el cron de Factoring
+                                para localizar las órdenes de cobro.
+                            </div>
+                            <div class="mt8">
+                                <field name="confirming_payment_mode_id" class="w-100"/>
+                            </div>
+
+                            <!-- Fecha desde -->
+                            <label for="confirming_from_date" class="mt16"/>
+                            <div class="text-muted">
+                                El cron sólo procesará facturas con fecha de vencimiento igual
+                                o posterior a esta fecha.
+                            </div>
+                            <div class="mt8">
+                                <field name="confirming_from_date"/>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Caja 2: cuentas y diario -->
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+
+                            <!-- Cuenta riesgo -->
+                            <label for="confirming_risk_account_id"/>
+                            <div class="text-muted mb8">
+                                Cuenta de efectos comerciales descontados (4311) que representa
+                                la deuda de Factoring.
+                            </div>
+                            <div class="mt8">
+                                <field name="confirming_risk_account_id" class="w-100"/>
+                            </div>
+
+                            <!-- Cuenta deuda -->
+                            <label for="confirming_debt_account_id" class="mt16"/>
+                            <div class="text-muted mb8">
+                                Cuenta de riesgo por efectos descontados (5208) donde se
+                                registrará el riesgo con el banco.
+                            </div>
+                            <div class="mt8">
+                                <field name="confirming_debt_account_id" class="w-100"/>
+                            </div>
+
+                            <!-- Diario -->
+                            <label for="confirming_journal_id" class="mt16"/>
+                            <div class="text-muted">
+                                Diario donde se generarán los asientos de cancelación de
+                                Factoring.
+                            </div>
+                            <div class="mt8">
+                                <field name="confirming_journal_id" class="w-100"/>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Caja 3: activar cron -->
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane">
+                            <field name="confirming_enable_cron"
+                                   attrs="{'readonly': [('confirming_payment_mode_id', '=', False)]}"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="confirming_enable_cron"/>
+                            <div class="text-muted">
+                                Si está activo, el cron procesará automáticamente las órdenes de cobro.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

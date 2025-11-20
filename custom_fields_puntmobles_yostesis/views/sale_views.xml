@@ -1,0 +1,27 @@
+<odoo>
+  <record id="sale_order_form_add_obs_inline" model="ir.ui.view">
+    <field name="name">sale.order.form.add.obs.inline</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_order_form"/>
+    <field name="arch" type="xml">
+
+      <!-- TREE del o2m: añade la columna sin column_invisible -->
+      <xpath expr="//page[@name='order_lines']//field[@name='order_line']//tree" position="inside">
+        <field name="x_studio_obs"
+               string="Obs Fabr Producto"
+               optional="show"
+               class="text-danger"
+               attrs="{'invisible': [('display_type', '!=', False)]}"/>
+      </xpath>
+
+      <!-- FORM del o2m: campo debajo de 'name' -->
+      <xpath expr="//page[@name='order_lines']//field[@name='order_line']//form//field[@name='name']" position="after">
+        <field name="x_studio_obs"
+               placeholder="Observaciones para fábrica"
+               attrs="{'invisible': [('display_type', '!=', False)]}"/>
+      </xpath>
+
+
+    </field>
+  </record>
+</odoo>

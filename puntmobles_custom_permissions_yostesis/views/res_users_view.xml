@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_inherit_restrict_sale" model="ir.ui.view">
+        <field name="name">res.users.form.restrict.sale.confirm</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='access_rights']" position="inside">
+                <group string="Permisos Puntmobles">
+                    <field name="restrict_confirm_sale"/>
+                    <field name="allow_change_confirmed_sale_customer"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_order_form_inherit_change_customer" model="ir.ui.view">
+    <field name="name">sale.order.form.change.customer.only</field>
+    <field name="model">sale.order</field>
+    <field name="inherit_id" ref="sale.view_order_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <field name="can_change_customer_by_user" invisible="1"/>
+
+        <button name="%(action_change_sale_customer_wizard)d"
+                string="Cambiar cliente"
+                type="action"
+                class="oe_highlight"
+                attrs="{
+                  'invisible': ['|', ('state','!=','sale'), ('can_change_customer_by_user','=', False)]
+                }"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

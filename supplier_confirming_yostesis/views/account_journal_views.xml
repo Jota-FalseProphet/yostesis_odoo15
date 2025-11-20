@@ -1,0 +1,14 @@
+<odoo>
+    <record id="view_account_journal_form_confirming" model="ir.ui.view">
+        <field name="name">account.journal.form.confirming.proveedores</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='bank_account']//group//field[@name='currency_id']" position="after">
+                <field name="confirming_payment_account_id"
+                       attrs="{'invisible': [('type', '!=', 'bank')]}"
+                />
+            </xpath>
+        </field>
+    </record>
+</odoo>
