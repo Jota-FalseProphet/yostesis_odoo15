@@ -25,7 +25,7 @@
     # Check https://github.com/odoo/odoo/blob/15.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Accounting',
-    'version': '15.0.1.2.25',
+    'version': '15.0.1.2.26',
 
     # any module necessary for this one to work correctly
     'depends': [
