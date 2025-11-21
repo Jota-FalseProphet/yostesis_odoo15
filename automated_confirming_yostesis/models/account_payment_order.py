@@ -69,6 +69,19 @@ class AccountPaymentOrder(models.Model):
                     if not full_rec:
                         continue
 
+                    # CORTAFUEGOS ANTI-DUPLICADOS:
+                    # Si en esta conciliación ya hay alguna línea que:
+                    # - tenga yostesis_confirming_cancel_move_id, o
+                    # - pertenezca a un asiento is_confirming_cancel_move,
+                    # entonces esta factura ya tiene su cancelación de factoring
+                    # y NO volvemos a crear otra.
+                    already_cancelled = full_rec.reconciled_line_ids.filtered(
+                        lambda l: l.yostesis_confirming_cancel_move_id
+                        or l.move_id.is_confirming_cancel_move
+                    )
+                    if already_cancelled:
+                        continue
+
                     related_moves = full_rec.reconciled_line_ids.mapped("move_id")
 
                     risk_lines = related_moves.mapped("line_ids").filtered(
@@ -80,6 +93,7 @@ class AccountPaymentOrder(models.Model):
                         continue
 
                     for risk_line in risk_lines:
+                        # Segunda capa anti-duplicados por si acaso
                         if risk_line.yostesis_confirming_cancel_move_id:
                             continue
 
@@ -132,10 +146,12 @@ class AccountPaymentOrder(models.Model):
                         if len(lines_to_reconcile) == 2:
                             lines_to_reconcile.reconcile()
 
+                        # Marcamos explícitamente la línea de riesgo como "procesada"
                         risk_line.write({
                             "yostesis_confirming_cancel_move_id": cancel_move.id,
                         })
 
+                        # Y marcamos también las líneas de la factura (430) para el widget
                         if full_rec:
                             invoice_lines = full_rec.reconciled_line_ids.filtered(
                                 lambda l: l.account_internal_type == "receivable"
