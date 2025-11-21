@@ -1,6 +1,3 @@
-# Punt_staging3/puntmobles/automated_confirming_yostesis/models/account_move.py
-
-
 import json
 
 from odoo import models, fields, _
@@ -24,6 +21,7 @@ class AccountMove(models.Model):
     )
 
     def _compute_confirming_cancel_move_id(self):
+        Move = self.env["account.move"]
         for move in self:
             if move.is_confirming_cancel_move:
                 move.confirming_cancel_move_id = False
@@ -32,9 +30,19 @@ class AccountMove(models.Model):
             line = move.line_ids.filtered(
                 lambda l: l.yostesis_confirming_cancel_move_id
             )[:1]
-            move.confirming_cancel_move_id = (
-                line.yostesis_confirming_cancel_move_id if line else False
+            if line:
+                move.confirming_cancel_move_id = line.yostesis_confirming_cancel_move_id
+                continue
+
+            cancel_move = Move.search(
+                [
+                    ("is_confirming_cancel_move", "=", True),
+                    ("company_id", "=", move.company_id.id),
+                    ("ref", "ilike", move.name),
+                ],
+                limit=1,
             )
+            move.confirming_cancel_move_id = cancel_move or False
 
     def _compute_payment_state(self):
         super()._compute_payment_state()
@@ -63,18 +71,15 @@ class AccountMove(models.Model):
     def _compute_payments_widget_reconciled_info(self):
         super()._compute_payments_widget_reconciled_info()
 
-        for move in self:
-            cancel_moves = move.line_ids.mapped("yostesis_confirming_cancel_move_id")
-            if move.confirming_cancel_move_id:
-                cancel_moves |= move.confirming_cancel_move_id
-            cancel_moves = cancel_moves.filtered(lambda m: m)
+        Move = self.env["account.move"]
 
-            if not cancel_moves:
+        for move in self:
+            if move.move_type not in ("out_invoice", "out_refund"):
                 continue
 
             widget_value = move.invoice_payments_widget
             if not widget_value or widget_value in ("false", "False"):
-                data = {"title": "", "outstanding": False, "content": []}
+                data = {"title": "Less Payment", "outstanding": False, "content": []}
                 original_is_str = True
             elif isinstance(widget_value, str):
                 data = json.loads(widget_value)
@@ -84,6 +89,21 @@ class AccountMove(models.Model):
                 original_is_str = False
 
             content = data.setdefault("content", [])
+
+            cancel_moves = Move.search(
+                [
+                    ("is_confirming_cancel_move", "=", True),
+                    ("company_id", "=", move.company_id.id),
+                    ("ref", "ilike", move.name),
+                ]
+            )
+
+            if not cancel_moves:
+                move.invoice_payments_widget = (
+                    json.dumps(data) if original_is_str else data
+                )
+                continue
+
             template = (content[0] if content else {}) or {}
             currency = move.currency_id
 
@@ -91,10 +111,17 @@ class AccountMove(models.Model):
                 if any(line.get("move_id") == cancel_move.id for line in content):
                     continue
 
-                amount = abs(cancel_move.amount_total_signed or move.amount_total_signed)
+                amount = abs(
+                    cancel_move.amount_total_signed or move.amount_total_signed
+                )
 
                 new_line = dict(template)
-                for key in ("payment_id", "move_line_id", "group_id", "account_payment_id"):
+                for key in (
+                    "payment_id",
+                    "move_line_id",
+                    "group_id",
+                    "account_payment_id",
+                ):
                     new_line.pop(key, None)
 
                 maturity_date = move.invoice_date_due or cancel_move.date
@@ -108,11 +135,10 @@ class AccountMove(models.Model):
                         "date": maturity_str,
                         "ref": cancel_move.ref or cancel_move.name,
                         "journal_name": cancel_move.journal_id.display_name,
+                        "name": _("Pagado al Vencimiento en %s") % maturity_label,
+                        "is_confirming": True,
                     }
                 )
-
-                new_line["name"] = _("Pagado al Vencimiento en %s") % maturity_label
-                new_line["is_confirming"] = True
 
                 if "currency_id" in template:
                     new_line["currency_id"] = currency.id
