@@ -31,7 +31,6 @@ class AccountPaymentOrder(models.Model):
         debt_account_param = icp.get_param("yostesis_confirming.confirming_debt_account_id")
         journal_param = icp.get_param("yostesis_confirming.confirming_journal_id")
 
-
         if not (risk_account_param and debt_account_param and journal_param):
             return
 
@@ -138,17 +137,13 @@ class AccountPaymentOrder(models.Model):
 
                         if full_rec:
                             invoice_lines = full_rec.reconciled_line_ids.filtered(
-                                lambda l: l.account_internal_type in ("receivable", "payable")
-                                and l.move_id.move_type in (
-                                    "out_invoice",
-                                    "in_invoice",
-                                    "out_refund",
-                                    "in_refund",
-                                )
+                                lambda l: l.account_internal_type == "receivable"
+                                and l.move_id.move_type in ("out_invoice", "out_refund")
                             )
-                            invoice_lines.write({
-                                "yostesis_confirming_cancel_move_id": cancel_move.id,
-                            })
+                            if invoice_lines:
+                                invoice_lines.write({
+                                    "yostesis_confirming_cancel_move_id": cancel_move.id,
+                                })
 
                 except Exception as e:
                     MailMessage.create({
