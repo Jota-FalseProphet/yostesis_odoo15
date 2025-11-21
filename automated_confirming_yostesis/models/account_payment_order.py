@@ -27,9 +27,10 @@ class AccountPaymentOrder(models.Model):
         payment_mode_param = icp.get_param("yostesis_confirming.confirming_payment_mode_id")
         confirming_payment_mode_id = int(payment_mode_param) if payment_mode_param else False
 
-        risk_account_param = icp.get_param("yostesis_confirming.confirming_debt_account_id")
-        debt_account_param = icp.get_param("yostesis_confirming.confirming_risk_account_id")
+        risk_account_param = icp.get_param("yostesis_confirming.confirming_risk_account_id")
+        debt_account_param = icp.get_param("yostesis_confirming.confirming_debt_account_id")
         journal_param = icp.get_param("yostesis_confirming.confirming_journal_id")
+
 
         if not (risk_account_param and debt_account_param and journal_param):
             return
