@@ -69,31 +69,27 @@ class AccountPaymentOrder(models.Model):
                     if not full_rec:
                         continue
 
-                    # CORTAFUEGOS ANTI-DUPLICADOS:
-                    # Si en esta conciliación ya hay alguna línea que:
-                    # - tenga yostesis_confirming_cancel_move_id, o
-                    # - pertenezca a un asiento is_confirming_cancel_move,
-                    # entonces esta factura ya tiene su cancelación de factoring
-                    # y NO volvemos a crear otra.
-                    already_cancelled = full_rec.reconciled_line_ids.filtered(
-                        lambda l: l.yostesis_confirming_cancel_move_id
-                        or l.move_id.is_confirming_cancel_move
-                    )
-                    if already_cancelled:
-                        continue
-
                     related_moves = full_rec.reconciled_line_ids.mapped("move_id")
 
                     risk_lines = related_moves.mapped("line_ids").filtered(
                         lambda l: l.account_id.id == risk_account.id
-                        and not l.move_id.is_confirming_cancel_move
                     )
 
                     if not risk_lines:
                         continue
 
+                    origin_move = origin_line.move_id
+                    existing_cancel_moves = Move.search(
+                        [
+                            ("is_confirming_cancel_move", "=", True),
+                            ("company_id", "=", origin_move.company_id.id),
+                            ("ref", "=", "Auto factoring cancellation %s" % origin_move.name),
+                        ],
+                        order="id desc",
+                    )
+                    main_cancel_move = existing_cancel_moves[:1]
+
                     for risk_line in risk_lines:
-                        # Segunda capa anti-duplicados por si acaso
                         if risk_line.yostesis_confirming_cancel_move_id:
                             continue
 
@@ -104,66 +100,70 @@ class AccountPaymentOrder(models.Model):
                         partner = risk_line.partner_id
                         company = risk_line.company_id
 
-                        vals_move = {
-                            "move_type": "entry",
-                            "date": origin_line.date_maturity,
-                            "journal_id": journal.id,
-                            "company_id": company.id,
-                            "ref": "Auto factoring cancellation %s" % origin_line.move_id.name,
-                            "is_confirming_cancel_move": True,
-                            "line_ids": [
-                                (0, 0, {
-                                    "name": "Factoring bank debt cancellation",
-                                    "account_id": risk_account.id,
-                                    "partner_id": partner.id,
-                                    "debit": amount,
-                                    "credit": 0.0,
-                                }),
-                                (0, 0, {
-                                    "name": "Factoring risk reclassification",
-                                    "account_id": debt_account.id,
-                                    "partner_id": partner.id,
-                                    "debit": 0.0,
-                                    "credit": amount,
-                                }),
-                            ],
-                        }
+                        cancel_move = main_cancel_move[:1]
+                        if not cancel_move:
+                            vals_move = {
+                                "move_type": "entry",
+                                "date": origin_line.date_maturity,
+                                "journal_id": journal.id,
+                                "company_id": company.id,
+                                "ref": "Auto factoring cancellation %s" % origin_move.name,
+                                "is_confirming_cancel_move": True,
+                                "line_ids": [
+                                    (0, 0, {
+                                        "name": "Factoring bank debt cancellation",
+                                        "account_id": risk_account.id,
+                                        "partner_id": partner.id,
+                                        "debit": amount,
+                                        "credit": 0.0,
+                                    }),
+                                    (0, 0, {
+                                        "name": "Factoring risk reclassification",
+                                        "account_id": debt_account.id,
+                                        "partner_id": partner.id,
+                                        "debit": 0.0,
+                                        "credit": amount,
+                                    }),
+                                ],
+                            }
+                            cancel_move = Move.create(vals_move)
+                            main_cancel_move = cancel_move
 
-                        cancel_move = Move.create(vals_move)
+                            if not self.env.context.get("confirming_test_only"):
+                                cancel_move.action_post()
 
-                        if not self.env.context.get("confirming_test_only"):
-                            cancel_move.action_post()
-
-                        lines_to_reconcile = risk_line | cancel_move.line_ids.filtered(
-                            lambda l: l.account_id.id == risk_account.id
-                            and l.partner_id.id == partner.id
-                            and l.company_id.id == company.id
-                        )
-                        lines_to_reconcile = lines_to_reconcile.filtered(
-                            lambda l: not l.reconciled and not l.full_reconcile_id
+                        invoice_lines = full_rec.reconciled_line_ids.filtered(
+                            lambda l: l.account_internal_type == "receivable"
+                            and l.move_id.move_type in ("out_invoice", "out_refund")
                         )
 
-                        if len(lines_to_reconcile) == 2:
-                            lines_to_reconcile.reconcile()
-
-                        # Marcamos explícitamente la línea de riesgo como "procesada"
                         risk_line.write({
                             "yostesis_confirming_cancel_move_id": cancel_move.id,
                         })
+                        if invoice_lines:
+                            invoice_lines.write({
+                                "yostesis_confirming_cancel_move_id": cancel_move.id,
+                            })
+                            invoices = invoice_lines.mapped("move_id")
+                            invoices._compute_confirming_cancel_move_id()
+                            invoices._compute_payments_widget_reconciled_info()
 
-                        # Y marcamos también las líneas de la factura (430) para el widget
-                        if full_rec:
-                            invoice_lines = full_rec.reconciled_line_ids.filtered(
-                                lambda l: l.account_internal_type == "receivable"
-                                and l.move_id.move_type in ("out_invoice", "out_refund")
+                        try:
+                            lines_to_reconcile = risk_line | cancel_move.line_ids.filtered(
+                                lambda l: l.account_id.id == risk_account.id
+                                and l.partner_id.id == partner.id
+                                and l.company_id.id == company.id
+                                and not l.reconciled
+                                and not l.full_reconcile_id
                             )
-                            if invoice_lines:
-                                invoice_lines.write({
-                                    "yostesis_confirming_cancel_move_id": cancel_move.id,
-                                })
-                                invoices = invoice_lines.mapped("move_id")
-                                invoices._compute_confirming_cancel_move_id()
-                                invoices._compute_payments_widget_reconciled_info()
+                            if len(lines_to_reconcile) == 2:
+                                lines_to_reconcile.reconcile()
+                        except Exception as e_rec:
+                            MailMessage.create({
+                                "model": "account.payment.order",
+                                "res_id": order.id,
+                                "body": "Error conciliando factoring (línea %s): %s" % (payment_line.id, e_rec),
+                            })
 
                 except Exception as e:
                     MailMessage.create({
