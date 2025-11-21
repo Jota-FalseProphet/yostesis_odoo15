@@ -73,6 +73,7 @@ class AccountPaymentOrder(models.Model):
 
                     risk_lines = related_moves.mapped("line_ids").filtered(
                         lambda l: l.account_id.id == risk_account.id
+                        and not l.move_id.is_confirming_cancel_move
                     )
 
                     if not risk_lines:
