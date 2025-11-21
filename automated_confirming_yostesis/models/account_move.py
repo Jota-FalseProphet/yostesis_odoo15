@@ -64,8 +64,12 @@ class AccountMove(models.Model):
         super()._compute_payments_widget_reconciled_info()
 
         for move in self:
-            cancel_move = move.confirming_cancel_move_id
-            if not cancel_move:
+            cancel_moves = move.line_ids.mapped("yostesis_confirming_cancel_move_id")
+            if move.confirming_cancel_move_id:
+                cancel_moves |= move.confirming_cancel_move_id
+            cancel_moves = cancel_moves.filtered(lambda m: m)
+
+            if not cancel_moves:
                 continue
 
             widget_value = move.invoice_payments_widget
@@ -80,46 +84,42 @@ class AccountMove(models.Model):
                 original_is_str = False
 
             content = data.setdefault("content", [])
-
-            if any(line.get("move_id") == cancel_move.id for line in content):
-                move.invoice_payments_widget = (
-                    json.dumps(data) if original_is_str else data
-                )
-                continue
-
             template = (content[0] if content else {}) or {}
-
-            amount = abs(cancel_move.amount_total_signed or move.amount_total_signed)
             currency = move.currency_id
 
-            new_line = dict(template)
+            for cancel_move in cancel_moves:
+                if any(line.get("move_id") == cancel_move.id for line in content):
+                    continue
 
-            for key in ("payment_id", "move_line_id", "group_id", "account_payment_id"):
-                new_line.pop(key, None)
+                amount = abs(cancel_move.amount_total_signed or move.amount_total_signed)
 
-            maturity_date = move.invoice_date_due or cancel_move.date
-            maturity_str = fields.Date.to_string(maturity_date)
-            maturity_label = format_date(self.env, maturity_date)
+                new_line = dict(template)
+                for key in ("payment_id", "move_line_id", "group_id", "account_payment_id"):
+                    new_line.pop(key, None)
 
-            new_line.update(
-                {
-                    "move_id": cancel_move.id,
-                    "amount": amount,
-                    "date": maturity_str,
-                    "ref": cancel_move.ref or cancel_move.name,
-                    "journal_name": cancel_move.journal_id.display_name,
-                }
-            )
+                maturity_date = move.invoice_date_due or cancel_move.date
+                maturity_str = fields.Date.to_string(maturity_date)
+                maturity_label = format_date(self.env, maturity_date)
 
-            new_line["name"] = _("Pagado al Vencimiento en %s") % maturity_label
-            new_line["is_confirming"] = True 
+                new_line.update(
+                    {
+                        "move_id": cancel_move.id,
+                        "amount": amount,
+                        "date": maturity_str,
+                        "ref": cancel_move.ref or cancel_move.name,
+                        "journal_name": cancel_move.journal_id.display_name,
+                    }
+                )
 
-            if "currency_id" in template:
-                new_line["currency_id"] = currency.id
-            if "currency" in template:
-                new_line["currency"] = currency.symbol
+                new_line["name"] = _("Pagado al Vencimiento en %s") % maturity_label
+                new_line["is_confirming"] = True
 
-            content.append(new_line)
+                if "currency_id" in template:
+                    new_line["currency_id"] = currency.id
+                if "currency" in template:
+                    new_line["currency"] = currency.symbol
+
+                content.append(new_line)
 
             move.invoice_payments_widget = (
                 json.dumps(data) if original_is_str else data
