@@ -144,6 +144,9 @@ class AccountPaymentOrder(models.Model):
                                 invoice_lines.write({
                                     "yostesis_confirming_cancel_move_id": cancel_move.id,
                                 })
+                                invoices = invoice_lines.mapped("move_id")
+                                invoices._compute_confirming_cancel_move_id()
+                                invoices._compute_payments_widget_reconciled_info()
 
                 except Exception as e:
                     MailMessage.create({
