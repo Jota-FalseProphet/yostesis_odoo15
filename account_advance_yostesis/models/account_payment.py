@@ -37,3 +37,56 @@ class AccountPayment(models.Model):
             vals["account_id"] = suspense.id
 
         return vals
+
+    def action_post(self):
+        res = super().action_post()
+        self._fix_simple_sale_advance_entries()
+        return res
+
+    def _fix_simple_sale_advance_entries(self):
+        SaleOrder = self.env["sale.order"]
+        for pay in self:
+            if not pay.is_advance:
+                continue
+            if pay.purchase_id:
+                continue
+
+            sale = SaleOrder.search(
+                [("account_payment_ids", "in", pay.id)],
+                limit=1,
+            )
+            if not sale:
+                continue
+
+            move = pay.move_id
+            if not move or move.state != "posted":
+                continue
+
+            company = move.company_id
+            acc_adv = company.account_advance_customer_id
+            if not acc_adv:
+                continue
+
+            adv_line = move.line_ids.filtered(
+                lambda l: l.account_id.id == acc_adv.id
+            )[:1]
+            if not adv_line:
+                continue
+
+            partner = pay.partner_id.commercial_partner_id
+            receivable = partner.property_account_receivable_id
+            if not receivable:
+                continue
+
+            other_lines = move.line_ids - adv_line
+            other_lines = other_lines.filtered(
+                lambda l: l.account_internal_type not in ("receivable", "payable")
+            )
+            if len(other_lines) != 1:
+                continue
+
+            other_lines.with_context(
+                skip_account_move_synchronization=True
+            ).write(
+                {"account_id": receivable.id}
+            )

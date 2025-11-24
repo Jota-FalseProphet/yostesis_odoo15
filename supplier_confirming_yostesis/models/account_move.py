@@ -1,3 +1,4 @@
+#addons-self-made/yostesis/supplier_confirming_yostesis/models/account_move.py
 from odoo import models
 
 
@@ -26,12 +27,8 @@ class AccountMove(models.Model):
                 journal, "confirming_payment_account_id", False
             )
             if not confirming_account:
-                # Diario sin cuenta de confirming -> no hacemos nada
                 continue
 
-            # IMPORTANTE: si el asiento tiene cuentas 'receivable' (430, etc.),
-            # lo consideramos flujo de CLIENTES y NO lo tocamos. Eso lo gestiona
-            # el módulo automated_confirming_yostesis.
             if any(
                 line.account_internal_type == "receivable"
                 for line in move.line_ids
@@ -43,7 +40,17 @@ class AccountMove(models.Model):
                 company, "account_journal_suspense_account_id", False
             )
 
-            # ¿Este asiento tiene una 407*? => anticipo de proveedor
+            # NUEVO: si el asiento usa la cuenta de anticipos de clientes (438),
+            # lo tratamos como anticipo de cliente y NO aplicamos lógica de confirming.
+            advance_customer_account = getattr(
+                company, "account_advance_customer_id", False
+            )
+            if advance_customer_account and any(
+                line.account_id.id == advance_customer_account.id
+                for line in move.line_ids
+            ):
+                continue
+
             has_advance_407 = any(
                 line.account_id.code
                 and line.account_id.code.startswith("407")
@@ -51,9 +58,6 @@ class AccountMove(models.Model):
             )
 
             if has_advance_407 and suspense_account:
-                # CASO ANTICIPO DE COMPRA:
-                # Forzamos que la "línea de liquidez" (no 407, no receivable/payable)
-                # vaya a la cuenta de suspense global.
                 liquidity_lines = move.line_ids.filtered(
                     lambda l: (
                         l.account_internal_type not in ("receivable", "payable")
@@ -67,10 +71,8 @@ class AccountMove(models.Model):
                     liquidity_lines.with_context(
                         skip_account_move_synchronization=True
                     ).write({"account_id": suspense_account.id})
-                # No aplicamos la lógica normal de confirming en este caso
                 continue
 
-            # COMPORTAMIENTO NORMAL DE CONFIRMING PROVEEDORES (NO ANTICIPOS):
             other_lines = move.line_ids.filtered(
                 lambda l: l.account_internal_type not in ("receivable", "payable")
             )
