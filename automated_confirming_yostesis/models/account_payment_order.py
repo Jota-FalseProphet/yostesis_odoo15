@@ -69,31 +69,16 @@ class AccountPaymentOrder(models.Model):
                     if not full_rec:
                         continue
 
-                    # CORTAFUEGOS ANTI-DUPLICADOS:
-                    # Si en esta conciliación ya hay alguna línea que:
-                    # - tenga yostesis_confirming_cancel_move_id, o
-                    # - pertenezca a un asiento is_confirming_cancel_move,
-                    # entonces esta factura ya tiene su cancelación de factoring
-                    # y NO volvemos a crear otra.
-                    already_cancelled = full_rec.reconciled_line_ids.filtered(
-                        lambda l: l.yostesis_confirming_cancel_move_id
-                        or l.move_id.is_confirming_cancel_move
-                    )
-                    if already_cancelled:
-                        continue
-
                     related_moves = full_rec.reconciled_line_ids.mapped("move_id")
 
                     risk_lines = related_moves.mapped("line_ids").filtered(
                         lambda l: l.account_id.id == risk_account.id
-                        and not l.move_id.is_confirming_cancel_move
                     )
 
                     if not risk_lines:
                         continue
 
                     for risk_line in risk_lines:
-                        # Segunda capa anti-duplicados por si acaso
                         if risk_line.yostesis_confirming_cancel_move_id:
                             continue
 
@@ -114,14 +99,14 @@ class AccountPaymentOrder(models.Model):
                             "line_ids": [
                                 (0, 0, {
                                     "name": "Factoring bank debt cancellation",
-                                    "account_id": risk_account.id,
+                                    "account_id": debt_account.id,
                                     "partner_id": partner.id,
                                     "debit": amount,
                                     "credit": 0.0,
                                 }),
                                 (0, 0, {
                                     "name": "Factoring risk reclassification",
-                                    "account_id": debt_account.id,
+                                    "account_id": risk_account.id,
                                     "partner_id": partner.id,
                                     "debit": 0.0,
                                     "credit": amount,
@@ -146,25 +131,23 @@ class AccountPaymentOrder(models.Model):
                         if len(lines_to_reconcile) == 2:
                             lines_to_reconcile.reconcile()
 
-                        # Marcamos explícitamente la línea de riesgo como "procesada"
                         risk_line.write({
                             "yostesis_confirming_cancel_move_id": cancel_move.id,
                         })
 
-                        # Y marcamos también las líneas de la factura (430) para el widget
                         if full_rec:
                             invoice_lines = full_rec.reconciled_line_ids.filtered(
-                                lambda l: l.account_internal_type == "receivable"
-                                and l.move_id.move_type in ("out_invoice", "out_refund")
+                                lambda l: l.account_internal_type in ("receivable", "payable")
+                                and l.move_id.move_type in (
+                                    "out_invoice",
+                                    "in_invoice",
+                                    "out_refund",
+                                    "in_refund",
+                                )
                             )
-                            if invoice_lines:
-                                invoice_lines.write({
-                                    "yostesis_confirming_cancel_move_id": cancel_move.id,
-                                })
-                                invoices = invoice_lines.mapped("move_id")
-                                invoices._compute_confirming_cancel_move_id()
-                                invoices._compute_payments_widget_reconciled_info()
-                                invoices._compute_payment_state()
+                            invoice_lines.write({
+                                "yostesis_confirming_cancel_move_id": cancel_move.id,
+                            })
 
                 except Exception as e:
                     MailMessage.create({

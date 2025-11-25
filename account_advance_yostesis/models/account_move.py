@@ -12,10 +12,11 @@ class AccountMove(models.Model):
         self._advance_407_apply_if_needed()
         return res
     
-    def _post(self, soft=True):
-        moves = super()._post(soft=soft)
-        moves._simple_customer_payment_apply_if_needed()
-        return moves
+    # def _post(self, soft=True):
+    #     moves = super()._post(soft=soft)
+    #     moves._simple_customer_payment_apply_if_needed()
+    #     moves._simple_supplier_payment_apply_if_needed()
+    #     return moves
 
     def _advance_438_apply_if_needed(self):
         invoices = self.filtered(
@@ -287,6 +288,57 @@ class AccountMove(models.Model):
             line_4311.with_context(
                 skip_account_move_synchronization=True
             ).write({"account_id": acc_4312.id})
+            
+    def _simple_supplier_payment_apply_if_needed(self):
+        Pay = self.env["account.payment"]
+        Account = self.env["account.account"]
+
+        for move in self:
+            if move.journal_id.type not in ("bank", "cash"):
+                continue
+
+            pay = Pay.search([("move_id", "=", move.id)], limit=1)
+            if not pay:
+                continue
+            if pay.partner_type != "supplier":
+                continue
+            if pay.payment_type != "outbound":
+                continue
+            if pay.is_advance:
+                continue
+            if move.payment_order_id:
+                continue
+
+            acc_411 = Account.search(
+                [
+                    ("code", "like", "411%"),
+                    ("company_id", "=", move.company_id.id),
+                ],
+                limit=1,
+            )
+            if not acc_411:
+                continue
+
+            line_5205 = move.line_ids.filtered(
+                lambda l: l.account_id.code
+                and l.account_id.code.startswith("5205")
+            )[:1]
+            if not line_5205:
+                continue
+
+            payable_lines = move.line_ids.filtered(
+                lambda l: l.account_internal_type == "payable"
+            )
+            if len(payable_lines) != 1:
+                continue
+            if not payable_lines[0].account_id.code or not payable_lines[
+                0
+            ].account_id.code.startswith("400"):
+                continue
+
+            line_5205.with_context(
+                skip_account_move_synchronization=True
+            ).write({"account_id": acc_411.id})
 
 
 

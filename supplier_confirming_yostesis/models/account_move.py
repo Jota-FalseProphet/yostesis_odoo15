@@ -40,8 +40,6 @@ class AccountMove(models.Model):
                 company, "account_journal_suspense_account_id", False
             )
 
-            # NUEVO: si el asiento usa la cuenta de anticipos de clientes (438),
-            # lo tratamos como anticipo de cliente y NO aplicamos lógica de confirming.
             advance_customer_account = getattr(
                 company, "account_advance_customer_id", False
             )
@@ -83,5 +81,13 @@ class AccountMove(models.Model):
 
     def _post(self, soft=True):
         moves = super()._post(soft=soft)
+
         moves._post_confirming_adjustment()
+
+        if hasattr(moves, "_simple_customer_payment_apply_if_needed"):
+            moves._simple_customer_payment_apply_if_needed()
+
+        if hasattr(moves, "_simple_supplier_payment_apply_if_needed"):
+            moves._simple_supplier_payment_apply_if_needed()
+
         return moves
