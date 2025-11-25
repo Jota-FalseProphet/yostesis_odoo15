@@ -8,3 +8,4 @@ from . import res_config_settings
 from . import purchase_payment
 from . import purchase_order
 from . import purchase_advance_payment_wizard
+# from . import account_move_customer_simple_payment

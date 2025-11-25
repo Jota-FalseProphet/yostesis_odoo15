@@ -11,6 +11,11 @@ class AccountMove(models.Model):
         self._advance_438_apply_if_needed()     
         self._advance_407_apply_if_needed()
         return res
+    
+    def _post(self, soft=True):
+        moves = super()._post(soft=soft)
+        moves._simple_customer_payment_apply_if_needed()
+        return moves
 
     def _advance_438_apply_if_needed(self):
         invoices = self.filtered(
@@ -237,6 +242,52 @@ class AccountMove(models.Model):
                 inv.write({"invoice_line_ids":[(0,0,{"name": note, "display_type":"line_note", "sequence": 9999})]})
             except Exception:
                 inv.message_post(body=note, subtype_xmlid="mail.mt_note")
+                
+    
+    def _simple_customer_payment_apply_if_needed(self):
+        Pay = self.env["account.payment"]
+        Account = self.env["account.account"]
+
+        for move in self:
+            pay = Pay.search([("move_id", "=", move.id)], limit=1)
+            if not pay:
+                continue
+            if pay.partner_type != "customer":
+                continue
+            if pay.payment_type != "inbound":
+                continue
+            if pay.is_advance:
+                continue
+            if move.payment_order_id:
+                continue
+
+            acc_4312 = Account.search(
+                [
+                    ("code", "like", "4312%"),
+                    ("company_id", "=", move.company_id.id),
+                ],
+                limit=1,
+            )
+            if not acc_4312:
+                continue
+
+            line_4311 = move.line_ids.filtered(
+                lambda l: l.account_id.code
+                and l.account_id.code.startswith("4311")
+            )[:1]
+            if not line_4311:
+                continue
+
+            recv_lines = move.line_ids.filtered(
+                lambda l: l.account_internal_type == "receivable"
+            )
+            if not recv_lines:
+                continue
+
+            line_4311.with_context(
+                skip_account_move_synchronization=True
+            ).write({"account_id": acc_4312.id})
+
 
 
     def _get_advance_applied_amount(self):
