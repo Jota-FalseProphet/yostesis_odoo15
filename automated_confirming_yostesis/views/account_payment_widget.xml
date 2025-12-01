@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Personalización del widget de pagos en factura para mostrar:
+
+        - "En remesa (factoring) ..." cuando la línea tiene is_confirming_risk
+        - "Pagado al Vencimiento en ..." cuando la línea virtual lleva name ya preparado
+        - Comportamiento estándar para el resto de pagos
+    -->
+    <template id="account_payment_field_yostesis" inherit_id="account.AccountPaymentField">
+        <!--
+            Odoo 15: la etiqueta de texto del pago es un <i> con clase o_payment_label.
+            Sustituimos su contenido por lógica condicional.
+        -->
+        <xpath expr="//i[hasclass('o_payment_label')]" position="replace">
+            <!-- Línea de REMESA (riesgo confirming) -->
+            <i t-if="line.get('is_confirming_risk')" class="o_field_widget text-start o_payment_label">
+                <t t-esc="line.get('name') or _('En remesa (factoring)')"/>
+            </i>
+
+            <!-- Línea virtual de PAGO AL VENCIMIENTO (cancelación confirming) -->
+            <i t-elif="line.get('is_confirming')" class="o_field_widget text-start o_payment_label">
+                <t t-esc="line.get('name') or _('Pagado al Vencimiento')"/>
+            </i>
+
+            <!-- Resto de pagos: comportamiento estándar usando name original -->
+            <i t-else="" class="o_field_widget text-start o_payment_label">
+                <t t-esc="line.get('name')"/>
+            </i>
+        </xpath>
+    </template>
+</odoo>

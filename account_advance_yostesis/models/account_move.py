@@ -10,6 +10,7 @@ class AccountMove(models.Model):
         res = super().action_post()
         self._advance_438_apply_if_needed()     
         self._advance_407_apply_if_needed()
+        self._fix_confirming_payment_mode_from_sale()
         return res
     
     # def _post(self, soft=True):
@@ -66,16 +67,17 @@ class AccountMove(models.Model):
             if not apply_amt:
                 continue
 
-            journal = payments[0].journal_id
-            if journal.type not in ("general", "bank", "cash"):
-                journal = Journal.search(
-                    [("type", "=", "general"), ("company_id", "=", company.id)],
-                    limit=1,
-                )
+            # Siempre usar un diario GENERAL para el asiento puente 438→430,
+            # nunca un diario bancario, para evitar las restricciones de
+            # cuentas de pagos/recibos pendientes.
+            journal = Journal.search(
+                [("type", "=", "general"), ("company_id", "=", company.id)],
+                limit=1,
+            )
             if not journal:
                 raise UserError(
                     _(
-                        "No hay diario disponible para registrar el traspaso de anticipos (438→430) en la compañía %s."
+                        "No hay diario general disponible para registrar el traspaso de anticipos (438→430) en la compañía %s."
                     )
                     % company.display_name
                 )
@@ -339,6 +341,50 @@ class AccountMove(models.Model):
             line_5205.with_context(
                 skip_account_move_synchronization=True
             ).write({"account_id": acc_411.id})
+
+    
+    def _fix_confirming_payment_mode_from_sale(self):
+        """
+        Si la factura proviene de un pedido cuya forma de pago es el modo
+        de Factoring configurado, se fuerza ese mismo modo en la factura
+        incluso después de validar, para que el cron de factoring la detecte.
+
+        Evita que account_payment_partner (u otros módulos) machaquen
+        el payment_mode_id con el modo por defecto del cliente.
+        """
+        icp = self.env["ir.config_parameter"].sudo()
+        payment_mode_param = icp.get_param(
+            "yostesis_confirming.confirming_payment_mode_id"
+        )
+        confirming_mode = (
+            self.env["account.payment.mode"].browse(int(payment_mode_param))
+            if payment_mode_param
+            else False
+        )
+        if not confirming_mode:
+            return
+
+        SaleOrder = self.env["sale.order"]
+
+        for move in self.filtered(
+            lambda m: m.move_type in ("out_invoice", "out_refund")
+        ):
+            # localizar pedido origen
+            sale = SaleOrder.search([("name", "=", move.invoice_origin)], limit=1)
+            if not sale:
+                sale = move.line_ids.sale_line_ids.order_id[:1]
+            if not sale:
+                continue
+
+            # sólo tocamos si el pedido usa el modo de FACTORING
+            if sale.payment_mode_id.id != confirming_mode.id:
+                continue
+
+            # si la factura no tiene ese mismo modo, lo forzamos
+            if move.payment_mode_id.id != confirming_mode.id:
+                move.with_context(tracking_disable=True).write(
+                    {"payment_mode_id": confirming_mode.id}
+                )
 
 
 

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_company_sii_start_form" model="ir.ui.view">
+        <field name="name">res.company.sii.start.form</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="l10n_es_aeat_sii_oca.view_company_sii_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='sii_period']" position="after">
+                <field name="sii_date_start"/>
+            </xpath>
+            <xpath expr="//field[@name='sii_test']" position="before">
+                <field name="sii_exonerated"/>
+                <field name="sii_auto_upload"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- <record id="view_company_aeat_mod_036" model="ir.ui.view">
+        <field name="name">res.company.mod.036.form</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="l10n_es_aeat.view_company_aeat_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+               <header>
+                <button type="object" name="aeat_request_036" string="Update Mod.036" class="btn btn-primary"/>
+                <button type="object" name="generate_obl" string="Generate Obligations" class="btn btn-secondary"/>
+                </header>
+            </xpath>
+            <xpath expr="//page[@name='aeat']" position="inside">
+                <group name="obligations">
+                    <field name="agency_simple_name" invisible="1"/>
+                    <field name="obligations"/>
+                    <field name="linked_obligations" widget="many2many_checkboxes"/>
+                </group>
+            </xpath>
+        </field>
+    </record> -->
+    <record id="view_company_form_city_zip" model="ir.ui.view">
+        <field name="name">res.company.form.city.zip</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base_location.view_company_form_city"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='zip_id']" position="replace">
+                <field name="zip_id" class="oe_edit_only"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

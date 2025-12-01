@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <!-- Heredamos la plantilla del reporte de factura -->
   <template id="report_invoice_advance_totals" inherit_id="account.report_invoice_document">
     
-    <!-- Buscamos la tabla que contiene el llamado a los totales de impuestos -->
     <xpath expr="//table[contains(@class, 'table-sm') and descendant::t[@t-call='account.document_tax_totals']]" position="inside">
       <t t-set="advance_applied" t-value="o._get_advance_applied_amount()"/>
       
