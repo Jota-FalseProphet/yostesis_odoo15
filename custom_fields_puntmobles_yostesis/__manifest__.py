@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Custom Fields for Puntmobles by Yostesis",
-    "version": "15.0.1.5.0",
+    "version": "15.0.1.5.2",
     "summary": "A bunch for custom fields needed by PuntMobles",
     "description": """
         This is a collection of custom fields required by PuntMobles for their Odoo implementation.
