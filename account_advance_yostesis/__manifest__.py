@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Customer/Supplier customized advance account (438/407) - Yostesis",
-    "version": "15.0.4.5.15",
+    "version": "15.0.4.6.2",
     "summary": "Gestión de anticipos: cuenta 438 para clientes y 407 para proveedores; aplicación y conciliación automática.",
     "description": """
         Módulo para mejorar la gestión de anticipos en Odoo (clientes y proveedores).
