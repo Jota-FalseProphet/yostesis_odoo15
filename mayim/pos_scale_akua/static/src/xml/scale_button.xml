@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="ScaleButton" owl="1">
+        <button class="control-button">
+            <div class="control-button-icon">
+                <i class="fa fa-balance-scale"/>
+            </div>
+            <div class="control-button-label">
+                <t t-esc="env._t('Pesar')"/>
+            </div>
+        </button>
+    </t>
+</templates>

@@ -9,4 +9,13 @@
     <field name="code">records.action_safe_back2draft()</field>
     <field name="sequence">5</field>
   </record>
+
+  <record id="action_fix_qty_received_current_pos_yostesis" model="ir.actions.server">
+        <field name="name">Arreglar cantidades recibidas</field>
+        <field name="model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_type">action</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_fix_qty_received_inconsistencies()</field>
+    </record>
 </odoo>

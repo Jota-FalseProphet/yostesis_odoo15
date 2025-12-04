@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="crm_case_claims_form_view_sale_order_line_follow_up" model="ir.ui.view">
+        <field name="name">crm.claim.form.sale.order.line.follow.up</field>
+        <field name="model">crm.claim</field>
+        <field name="inherit_id" ref="crm_claim.crm_case_claims_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='type_action']" position="after">
+                <field name="sale_order_for_replace_id"/>
+            </xpath>
+
+            <xpath expr="//field[@name='sale_order_for_replace_id']" position="after">
+                <field name="cost_amount"/>
+                <!-- <field name="sale_order_line_for_replace_id"/> -->
+                <field name="cost_currency_id"/> 
+            </xpath>
+        </field>
+    </record>
+</odoo>

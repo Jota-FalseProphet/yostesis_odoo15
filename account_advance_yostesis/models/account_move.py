@@ -54,15 +54,6 @@ class AccountMove(models.Model):
             if not payments:
                 continue
 
-            adv_lines = payments.mapped("move_id.line_ids").filtered(
-                lambda l: l.account_id == acc_adv
-                and l.partner_id == partner
-                and not l.reconciled
-                and l.company_id == company
-            )
-            if not adv_lines:
-                continue
-
             recv_line = inv.line_ids.filtered(
                 lambda l: l.account_id.internal_type == "receivable"
             )[:1]
@@ -71,42 +62,6 @@ class AccountMove(models.Model):
 
             inv_curr = inv.currency_id
             comp_curr = company.currency_id
-
-            if inv_curr == comp_curr:
-                credit_available_ccy = -sum(adv_lines.mapped("balance"))
-                if credit_available_ccy <= 0:
-                    continue
-
-                invoice_residual_ccy = inv.amount_residual
-                if invoice_residual_ccy <= 0:
-                    continue
-
-                apply_amt_ccy = min(credit_available_ccy, invoice_residual_ccy)
-                if not apply_amt_ccy:
-                    continue
-
-                apply_amt_cur = apply_amt_ccy
-
-            else:
-                residuals_cur = adv_lines.mapped("amount_residual_currency")
-                if not residuals_cur:
-                    residuals_cur = adv_lines.mapped("amount_currency")
-                credit_available_cur = -sum(residuals_cur)
-                if credit_available_cur <= 0:
-                    continue
-
-                invoice_residual_cur = recv_line.amount_residual_currency
-                if invoice_residual_cur <= 0:
-                    continue
-
-                apply_amt_cur = min(credit_available_cur, invoice_residual_cur)
-                if not apply_amt_cur:
-                    continue
-
-                conv_date = inv.invoice_date or inv.date or fields.Date.context_today(self)
-                apply_amt_ccy = inv_curr._convert(
-                    apply_amt_cur, comp_curr, company, conv_date
-                )
 
             journal = Journal.search(
                 [("type", "=", "general"), ("company_id", "=", company.id)],
@@ -120,72 +75,119 @@ class AccountMove(models.Model):
                     % company.display_name
                 )
 
-            bridge_vals = {
-                "ref": _("Aplicación anticipo %s")
-                % (inv.name or inv.ref or inv.id),
-                "move_type": "entry",
-                "journal_id": journal.id,
-                "date": inv.invoice_date
-                or fields.Date.context_today(self),
-            }
+            pay_moves = payments.mapped("move_id").sorted("date")
 
-            if inv_curr == comp_curr:
-                line_adv = {
-                    "name": _("Aplicación anticipo a %s")
+            for pay_move in pay_moves:
+                adv_lines = pay_move.line_ids.filtered(
+                    lambda l: l.account_id == acc_adv
+                    and l.partner_id == partner
+                    and not l.reconciled
+                    and l.company_id == company
+                )
+                if not adv_lines:
+                    continue
+
+                if inv_curr == comp_curr:
+                    credit_available_ccy = -sum(adv_lines.mapped("balance"))
+                    if credit_available_ccy <= 0:
+                        continue
+
+                    invoice_residual_ccy = inv.amount_residual
+                    if invoice_residual_ccy <= 0:
+                        break
+
+                    apply_amt_ccy = min(credit_available_ccy, invoice_residual_ccy)
+                    if not apply_amt_ccy:
+                        continue
+
+                    apply_amt_cur = apply_amt_ccy
+
+                else:
+                    residuals_cur = adv_lines.mapped("amount_residual_currency")
+                    if not residuals_cur:
+                        residuals_cur = adv_lines.mapped("amount_currency")
+                    credit_available_cur = -sum(residuals_cur)
+                    if credit_available_cur <= 0:
+                        continue
+
+                    invoice_residual_cur = recv_line.amount_residual_currency
+                    if invoice_residual_cur <= 0:
+                        break
+
+                    apply_amt_cur = min(credit_available_cur, invoice_residual_cur)
+                    if not apply_amt_cur:
+                        continue
+
+                    conv_date = inv.invoice_date or inv.date or fields.Date.context_today(self)
+                    apply_amt_ccy = inv_curr._convert(
+                        apply_amt_cur, comp_curr, company, conv_date
+                    )
+
+                advance_date = pay_move.date or inv.invoice_date or fields.Date.context_today(self)
+
+                bridge_vals = {
+                    "ref": _("Aplicación anticipo %s")
                     % (inv.name or inv.ref or inv.id),
-                    "account_id": acc_adv.id,
-                    "debit": apply_amt_ccy,
-                    "partner_id": partner.id,
+                    "move_type": "entry",
+                    "journal_id": journal.id,
+                    "date": advance_date,
                 }
-                line_recv = {
-                    "name": _("Aplicación anticipo a %s")
-                    % (inv.name or inv.ref or inv.id),
-                    "account_id": recv_line.account_id.id,
-                    "credit": apply_amt_ccy,
-                    "partner_id": partner.id,
-                }
-            else:
-                line_adv = {
-                    "name": _("Aplicación anticipo a %s")
-                    % (inv.name or inv.ref or inv.id),
-                    "account_id": acc_adv.id,
-                    "debit": apply_amt_ccy,
-                    "amount_currency": apply_amt_cur,
-                    "currency_id": inv_curr.id,
-                    "partner_id": partner.id,
-                }
-                line_recv = {
-                    "name": _("Aplicación anticipo a %s")
-                    % (inv.name or inv.ref or inv.id),
-                    "account_id": recv_line.account_id.id,
-                    "credit": apply_amt_ccy,
-                    "amount_currency": -apply_amt_cur,
-                    "currency_id": inv_curr.id,
-                    "partner_id": partner.id,
-                }
-                bridge_vals["currency_id"] = inv_curr.id
 
-            bridge_vals["line_ids"] = [
-                (0, 0, line_adv),
-                (0, 0, line_recv),
-            ]
+                if inv_curr == comp_curr:
+                    line_adv = {
+                        "name": _("Aplicación anticipo a %s")
+                        % (inv.name or inv.ref or inv.id),
+                        "account_id": acc_adv.id,
+                        "debit": apply_amt_ccy,
+                        "partner_id": partner.id,
+                    }
+                    line_recv = {
+                        "name": _("Aplicación anticipo a %s")
+                        % (inv.name or inv.ref or inv.id),
+                        "account_id": recv_line.account_id.id,
+                        "credit": apply_amt_ccy,
+                        "partner_id": partner.id,
+                    }
+                else:
+                    line_adv = {
+                        "name": _("Aplicación anticipo a %s")
+                        % (inv.name or inv.ref or inv.id),
+                        "account_id": acc_adv.id,
+                        "debit": apply_amt_ccy,
+                        "amount_currency": apply_amt_cur,
+                        "currency_id": inv_curr.id,
+                        "partner_id": partner.id,
+                    }
+                    line_recv = {
+                        "name": _("Aplicación anticipo a %s")
+                        % (inv.name or inv.ref or inv.id),
+                        "account_id": recv_line.account_id.id,
+                        "credit": apply_amt_ccy,
+                        "amount_currency": -apply_amt_cur,
+                        "currency_id": inv_curr.id,
+                        "partner_id": partner.id,
+                    }
+                    bridge_vals["currency_id"] = inv_curr.id
 
-            bridge_move = AccountMove.create(bridge_vals)
-            bridge_move.action_post()
+                bridge_vals["line_ids"] = [
+                    (0, 0, line_adv),
+                    (0, 0, line_recv),
+                ]
 
-            bridge_recv_line = bridge_move.line_ids.filtered(
-                lambda l: l.account_id == recv_line.account_id and not l.reconciled
-            )
-            (recv_line | bridge_recv_line).reconcile()
+                bridge_move = AccountMove.create(bridge_vals)
+                bridge_move.action_post()
 
-            bridge_adv_line = bridge_move.line_ids.filtered(
-                lambda l: l.account_id == acc_adv and not l.reconciled
-            )
-            (adv_lines | bridge_adv_line).reconcile()
+                bridge_recv_line = bridge_move.line_ids.filtered(
+                    lambda l: l.account_id == recv_line.account_id and not l.reconciled
+                )
+                (recv_line | bridge_recv_line).reconcile()
 
-            # Nota en divisa de la factura
-            note_amount = apply_amt_ccy if inv_curr == comp_curr else apply_amt_cur
+                bridge_adv_line = bridge_move.line_ids.filtered(
+                    lambda l: l.account_id == acc_adv and not l.reconciled
+                )
+                (adv_lines | bridge_adv_line).reconcile()
 
+            note_amount = inv._get_advance_applied_amount()
             if note_amount and inv.state == "posted":
                 note_text = _(
                     "Anticipos aplicados en esta factura: %s"
@@ -195,27 +197,25 @@ class AccountMove(models.Model):
                     lambda l: l.display_type == "line_note"
                     and "Anticipos aplicados" in (l.name or "")
                 )
-                if already:
-                    continue
-
-                try:
-                    inv.write(
-                        {
-                            "invoice_line_ids": [
-                                (
-                                    0,
-                                    0,
-                                    {
-                                        "name": note_text,
-                                        "display_type": "line_note",
-                                        "sequence": 9999,
-                                    },
-                                )
-                            ]
-                        }
-                    )
-                except Exception:
-                    inv.message_post(body=note_text, subtype_xmlid="mail.mt_note")
+                if not already:
+                    try:
+                        inv.write(
+                            {
+                                "invoice_line_ids": [
+                                    (
+                                        0,
+                                        0,
+                                        {
+                                            "name": note_text,
+                                            "display_type": "line_note",
+                                            "sequence": 9999,
+                                        },
+                                    )
+                                ]
+                            }
+                        )
+                    except Exception:
+                        inv.message_post(body=note_text, subtype_xmlid="mail.mt_note")
 
 
 
@@ -269,11 +269,14 @@ class AccountMove(models.Model):
             if not journal:
                 continue
 
+            # Usar la fecha del anticipo (pago) en lugar de la fecha de la factura
+            advance_date = adv_lines[0].date if adv_lines else (inv.invoice_date or fields.Date.context_today(self))
+            
             bridge = self.env["account.move"].create({
                 "ref": _("Aplicación anticipo proveedor %s") % (inv.name or inv.ref or inv.id),
                 "move_type": "entry",
                 "journal_id": journal.id,
-                "date": inv.invoice_date or fields.Date.context_today(self),
+                "date": advance_date,
                 "line_ids": [
                     (0,0,{"name": _("Aplicación anticipo a %s") % (inv.name or inv.ref or inv.id),
                         "account_id": pay_line.account_id.id, "debit": apply_amt, "partner_id": partner.id}),
@@ -288,15 +291,40 @@ class AccountMove(models.Model):
             bridge_adv = bridge.line_ids.filtered(lambda l: l.account_id == acc_407 and not l.reconciled)
             (adv_lines | bridge_adv).reconcile()
 
-            note = _("Anticipos de proveedor aplicados en esta factura: %s") % (
-                inv.currency_id.symbol + " " + inv.currency_id.round(
-                    inv.company_currency_id._convert(apply_amt, inv.currency_id, company, inv.date or fields.Date.today())
-                ).__format__("f")
-            )
-            try:
-                inv.write({"invoice_line_ids":[(0,0,{"name": note, "display_type":"line_note", "sequence": 9999})]})
-            except Exception:
-                inv.message_post(body=note, subtype_xmlid="mail.mt_note")
+            # Crear líneas de nota separadas por cada anticipo/pago con su fecha
+            lines_to_add = []
+            for adv_line in adv_lines:
+                pay_move = adv_line.move_id
+                # Convertir a la moneda de la factura
+                if inv.currency_id == company.currency_id:
+                    amt_display = adv_line.balance
+                else:
+                    amt_display = inv.currency_id._convert(
+                        adv_line.balance, inv.currency_id, company, pay_move.date or fields.Date.today()
+                    )
+                
+                note_text = _(
+                    "Anticipo pagado el %s: %s"
+                ) % (
+                    fields.Date.to_string(pay_move.date),
+                    inv.currency_id.symbol + " %.2f" % abs(amt_display)
+                )
+                lines_to_add.append({
+                    "name": note_text,
+                    "display_type": "line_note",
+                    "sequence": 9999 + len(lines_to_add),
+                })
+
+            if lines_to_add:
+                try:
+                    inv.write({
+                        "invoice_line_ids": [
+                            (0, 0, line_data) for line_data in lines_to_add
+                        ]
+                    })
+                except Exception:
+                    for line_data in lines_to_add:
+                        inv.message_post(body=line_data['name'], subtype_xmlid="mail.mt_note")
                 
     
     def _simple_customer_payment_apply_if_needed(self):
