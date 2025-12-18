@@ -7,6 +7,12 @@ class AccountVoucherWizard(models.TransientModel):
     _inherit = "account.voucher.wizard"
 
     def _prepare_payment_vals(self, sale):
+        if sale.order_line.filtered(lambda l: getattr(l, "is_downpayment", False)):
+            raise UserError(_(
+                "No puedes crear un anticipo simple (advancepayment) en un pedido que ya usa Down payments.\n"
+                "Motivo: se mezclan dos flujos distintos y luego fallan conciliaciones y/o el widget de créditos pendientes.\n"
+                "Solución: termina el flujo de Down payment para este pedido, o usa un único sistema para anticipos."
+            ))
         vals = super()._prepare_payment_vals(sale)
         company = sale.company_id
 

@@ -6,3 +6,4 @@ from . import purchase_order
 from . import sale_order
 from . import crm_claim
 from . import sale_order_project
+from . import product_product

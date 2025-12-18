@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Customer/Supplier customized advance account (438/407) - Yostesis",
-    "version": "15.0.4.6.4",
+    "version": "15.0.4.7.0",
     "summary": "Gestión de anticipos: cuenta 438 para clientes y 407 para proveedores; aplicación y conciliación automática.",
     "description": """
         Módulo para mejorar la gestión de anticipos en Odoo (clientes y proveedores).
@@ -33,6 +33,7 @@
         Requisitos y compatibilidad:
         - Diseñado para Odoo 15.
         - Dependencias: `account`, `sale_advance_payment`, `purchase_advance_payment`.
+        - ADVERTENCIA: Este módulo NO es compatible con el módulo `l10n_es_sale_downpayment_yostesis`. Si un pedido tiene anticipos simples disponibles (advance_payment), el downpayment será bloqueado automáticamente. Elige uno u otro sistema de anticipos para cada pedido, no ambos simultáneamente.
 
         Configuración recomendada:
         1. En la ficha de la compañía, configurar `Cuenta anticipos clientes (438)` y `Cuenta anticipos proveedores (407)`.

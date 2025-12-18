@@ -187,35 +187,45 @@ class AccountMove(models.Model):
                 )
                 (adv_lines | bridge_adv_line).reconcile()
 
+            # note_amount = inv._get_advance_applied_amount()
+            # if note_amount and inv.state == "posted":
+            #     note_text = _(
+            #         "Anticipos aplicados en esta factura: %s"
+            #     ) % (inv.currency_id.symbol + " %.2f" % note_amount)
+
+            #     already = inv.invoice_line_ids.filtered(
+            #         lambda l: l.display_type == "line_note"
+            #         and "Anticipos aplicados" in (l.name or "")
+            #     )
+            #     if not already:
+            #         try:
+            #             inv.write(
+            #                 {
+            #                     "invoice_line_ids": [
+            #                         (
+            #                             0,
+            #                             0,
+            #                             {
+            #                                 "name": note_text,
+            #                                 "display_type": "line_note",
+            #                                 "sequence": 9999,
+            #                             },
+            #                         )
+            #                     ]
+            #                 }
+            #             )
+            #         except Exception:
+            #             inv.message_post(body=note_text, subtype_xmlid="mail.mt_note")
+
             note_amount = inv._get_advance_applied_amount()
             if note_amount and inv.state == "posted":
                 note_text = _(
                     "Anticipos aplicados en esta factura: %s"
                 ) % (inv.currency_id.symbol + " %.2f" % note_amount)
 
-                already = inv.invoice_line_ids.filtered(
-                    lambda l: l.display_type == "line_note"
-                    and "Anticipos aplicados" in (l.name or "")
-                )
-                if not already:
-                    try:
-                        inv.write(
-                            {
-                                "invoice_line_ids": [
-                                    (
-                                        0,
-                                        0,
-                                        {
-                                            "name": note_text,
-                                            "display_type": "line_note",
-                                            "sequence": 9999,
-                                        },
-                                    )
-                                ]
-                            }
-                        )
-                    except Exception:
-                        inv.message_post(body=note_text, subtype_xmlid="mail.mt_note")
+                # Para evitar que se reescriban comisionistas al tocar invoice_line_ids,
+                # dejamos este dato solo en el chatter.
+                inv.message_post(body=note_text, subtype_xmlid="mail.mt_note")
 
 
 

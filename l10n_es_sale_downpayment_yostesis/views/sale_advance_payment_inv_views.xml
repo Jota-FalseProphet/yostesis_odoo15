@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="pmx_sale_advance_payment_inv_no_mix" model="ir.ui.view">
+    <field name="name">pmx.sale.advance.payment.inv.no.mix</field>
+    <field name="model">sale.advance.payment.inv</field>
+    <field name="inherit_id" ref="sale.view_sale_advance_payment_inv"/>
+    <field name="arch" type="xml">
+      <xpath expr="//form/group[1]" position="before">
+        <field name="pmx_mix_blocked" invisible="1"/>
+
+        <div class="alert alert-danger" attrs="{'invisible':[('pmx_mix_blocked','=',False)]}">
+          <field name="pmx_mix_message" nolabel="1" widget="html" readonly="1"/>
+        </div>
+      </xpath>
+    </field>
+  </record>
+</odoo>

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "INDAWS FIXES: Yostesis Patches",
-    "version": "15.0.1.5.6",
+    "version": "15.0.1.6.1",
     "summary": "A summary of mini patches for Indaws modules",
     "description": """
         This is a collection of small patches to fix issues in Indaws modules.

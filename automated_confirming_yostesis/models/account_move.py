@@ -22,9 +22,6 @@ class AccountMove(models.Model):
         copy=False,
     )
 
-    # ------------------------------------------------------------------
-    # LOCALIZAR ASIENTO DE CANCELACIÓN (PAGO AL VENCIMIENTO)
-    # ------------------------------------------------------------------
     def _compute_confirming_cancel_move_id(self):
         for move in self:
             if move.is_confirming_cancel_move:
@@ -38,15 +35,15 @@ class AccountMove(models.Model):
                 line.yostesis_confirming_cancel_move_id if line else False
             )
 
-    # ------------------------------------------------------------------
-    # ESTADO DE PAGO CON RIESGO CONFIRMING
-    # ------------------------------------------------------------------
     def _compute_payment_state(self):
         """
-        - Si hay riesgo de confirming (4311) aún abierto, la factura debe
-          permanecer en 'in_payment' aunque esté totalmente conciliada.
+        Extiende el cómputo estándar de estado de pago para el caso de confirming.
 
-        - Cuando exista 'confirming_cancel_move_id' y el residual sea 0,
+        - Si hay riesgo de confirming (4311) aún abierto, la factura debe
+          permanecer en 'in_payment', incluso aunque esté completamente conciliada
+          y existan otros cobros (anticipos, pagos reales, etc.).
+
+        - Cuando exista 'confirming_cancel_move_id' y el residual sea 0, se
           pasa definitivamente a 'paid'.
         """
         super()._compute_payment_state()
@@ -68,7 +65,9 @@ class AccountMove(models.Model):
             ):
                 continue
 
-            # 1) Hay riesgo 4311 vivo → estado forzado a in_payment
+            # 1) Si Odoo la ha marcado como 'paid' pero todavía hay riesgo
+            #    de confirming sin asiento de cancelación, la forzamos a
+            #    'in_payment'. Esto cubre el caso "anticipo + confirming".
             if move.payment_state == "paid" and risk_account:
                 recv_pay_lines = move.line_ids.filtered(
                     lambda l: l.account_internal_type in ("receivable", "payable")
@@ -82,7 +81,7 @@ class AccountMove(models.Model):
                     if risk_lines:
                         move.payment_state = "in_payment"
 
-            # 2) Cuando ya existe cancelación y residual 0 → paid
+            # 2) Cuando ya existe el asiento de cancelación y residual 0 → 'paid'
             if move.payment_state != "in_payment":
                 continue
 
@@ -95,23 +94,17 @@ class AccountMove(models.Model):
             ):
                 move.payment_state = "paid"
 
-    # ------------------------------------------------------------------
-    # WIDGET DE PAGOS EN LA FACTURA
-    # ------------------------------------------------------------------
     def _compute_payments_widget_reconciled_info(self):
         """
-        Extiende el widget de pagos para el caso confirming:
-
-        - Marca las líneas de RIESGO (4311) como 'is_confirming_risk'
-          para poder cambiar el texto en el widget (por ejemplo,
-          "En remesa (factoring) el ...").
-
-        - Añade una línea virtual cuando existe el asiento de
-          cancelación (pago al vencimiento), con el texto:
-          "Pagado al Vencimiento en ...".
+        - Conserva el comportamiento estándar del widget de pagos.
+        - Añade una línea virtual cuando existe el asiento de cancelación de confirming
+          ('Pagado al Vencimiento en ...').
+        - Marca las líneas de remesa (movimiento con 4311 al DEBE) como "remesa en
+          proceso de cobro", modificando el payment_method_name.
         """
         super()._compute_payments_widget_reconciled_info()
 
+        Move = self.env["account.move"]
         icp = self.env["ir.config_parameter"].sudo()
         risk_param = icp.get_param("yostesis_confirming.confirming_risk_account_id")
         risk_account = (
@@ -120,12 +113,10 @@ class AccountMove(models.Model):
             else self.env["account.account"].browse()
         )
 
-        Move = self.env["account.move"]
-
         for move in self:
-            # ----------------------------------------------------------
-            # Normalizar widget_value a dict
-            # ----------------------------------------------------------
+            cancel_move = move.confirming_cancel_move_id
+
+            # --- 1) Leer el widget actual ---
             widget_value = move.invoice_payments_widget
             if not widget_value or widget_value in ("false", "False"):
                 data = {"title": "", "outstanding": False, "content": []}
@@ -134,7 +125,8 @@ class AccountMove(models.Model):
                 try:
                     data = json.loads(widget_value)
                 except Exception:
-                    data = {"title": "", "outstanding": False, "content": []}
+                    # Si por lo que sea está corrupto, no tocamos nada
+                    continue
                 original_is_str = True
             else:
                 data = widget_value
@@ -142,9 +134,56 @@ class AccountMove(models.Model):
 
             content = data.setdefault("content", [])
 
-            # ----------------------------------------------------------
-            # 1) Marcar líneas de REMESA (riesgo confirming 4311)
-            # ----------------------------------------------------------
+            # --- 2) Añadir línea virtual de cancelación de confirming, si aplica ---
+            if cancel_move:
+                if not any(line.get("move_id") == cancel_move.id for line in content):
+                    template = (content[0] if content else {}) or {}
+
+                    amount = abs(
+                        cancel_move.amount_total_signed or move.amount_total_signed
+                    )
+                    currency = move.currency_id
+
+                    new_line = dict(template)
+
+                    for key in (
+                        "payment_id",
+                        "move_line_id",
+                        "group_id",
+                        "account_payment_id",
+                    ):
+                        new_line.pop(key, None)
+
+                    maturity_date = move.invoice_date_due or cancel_move.date
+                    maturity_str = fields.Date.to_string(maturity_date)
+                    maturity_label = format_date(self.env, maturity_date)
+
+                    new_line.update(
+                        {
+                            "move_id": cancel_move.id,
+                            "amount": amount,
+                            "date": maturity_str,
+                            "ref": cancel_move.ref or cancel_move.name,
+                            "journal_name": cancel_move.journal_id.display_name,
+                        }
+                    )
+
+                    new_line["name"] = _(
+                        "Pagado al Vencimiento en %s"
+                    ) % maturity_label
+                    new_line["is_confirming"] = True
+
+                    if "currency_id" in template:
+                        new_line["currency_id"] = currency.id
+                    if "currency" in template:
+                        new_line["currency"] = currency.symbol
+
+                    content.append(new_line)
+
+            # --- 3) Marcar líneas de RIESGO de confirming (remesa) ---
+            # Queremos localizar el apunte de la remesa (efecto descontado):
+            # asiento que tenga la 4311 AL DEBE (riesgo) → esa línea del widget
+            # la marcamos como "remesa en proceso de cobro".
             if risk_account:
                 for line_dict in content:
                     move_id = line_dict.get("move_id")
@@ -155,82 +194,30 @@ class AccountMove(models.Model):
                     if not pay_move:
                         continue
 
-                    # ¿Este apunte forma parte del asiento de riesgo?
-                    risk_lines = pay_move.line_ids.filtered(
-                        lambda l: l.account_id.id == risk_account.id
-                        and not l.yostesis_confirming_cancel_move_id
+                    # 4311 al DEBE => asiento de riesgo (remesa viva)
+                    risk_line = pay_move.line_ids.filtered(
+                        lambda l: l.account_id.id == risk_account.id and l.debit > 0.0
                     )
-                    if not risk_lines:
+                    if not risk_line:
                         continue
 
-                    # Lo marcamos para el QWeb del widget
+                    # Marcamos la línea como de riesgo de confirming
                     line_dict["is_confirming_risk"] = True
 
-                    # Texto más adecuado para remesa (opcional, por si el
-                    # template usa line.name).
-                    maturity_date = move.invoice_date_due or pay_move.date
-                    maturity_label = format_date(self.env, maturity_date)
-                    line_dict["name"] = _(
-                        "En remesa (factoring) con vto. %s"
-                    ) % maturity_label
+                    # Ajustamos el texto del método de pago para que el usuario
+                    # vea claramente que es una remesa en proceso, no un cobro ya
+                    # realizado.
+                    base_label = _("Remesa en proceso de cobro")
+                    pm_name = line_dict.get("payment_method_name")
+                    if pm_name:
+                        line_dict["payment_method_name"] = "%s - %s" % (
+                            base_label,
+                            pm_name,
+                        )
+                    else:
+                        line_dict["payment_method_name"] = base_label
 
-            # ----------------------------------------------------------
-            # 2) Añadir línea virtual de PAGO AL VENCIMIENTO
-            # ----------------------------------------------------------
-            cancel_move = move.confirming_cancel_move_id
-            if cancel_move:
-                # ¿ya existe una línea en el widget para este asiento?
-                if any(
-                    line.get("move_id") == cancel_move.id for line in content
-                ):
-                    move.invoice_payments_widget = (
-                        json.dumps(data) if original_is_str else data
-                    )
-                    continue
-
-                template = (content[0] if content else {}) or {}
-                new_line = dict(template)
-
-                # Limpiar claves específicas de pago
-                for key in (
-                    "payment_id",
-                    "move_line_id",
-                    "group_id",
-                    "account_payment_id",
-                ):
-                    new_line.pop(key, None)
-
-                amount = abs(
-                    cancel_move.amount_total_signed or move.amount_total_signed
-                )
-                currency = move.currency_id
-
-                maturity_date = move.invoice_date_due or cancel_move.date
-                maturity_str = fields.Date.to_string(maturity_date)
-                maturity_label = format_date(self.env, maturity_date)
-
-                new_line.update(
-                    {
-                        "move_id": cancel_move.id,
-                        "amount": amount,
-                        "date": maturity_str,
-                        "ref": cancel_move.ref or cancel_move.name,
-                        "journal_name": cancel_move.journal_id.display_name,
-                        "name": _("Pagado al Vencimiento en %s") % maturity_label,
-                        "is_confirming": True,
-                    }
-                )
-
-                if "currency_id" in template:
-                    new_line["currency_id"] = currency.id
-                if "currency" in template:
-                    new_line["currency"] = currency.symbol
-
-                content.append(new_line)
-
-            # ----------------------------------------------------------
-            # Guardar de vuelta en el campo compute
-            # ----------------------------------------------------------
+            # --- 4) Volcar de nuevo el widget si lo tratábamos como str ---
             move.invoice_payments_widget = (
                 json.dumps(data) if original_is_str else data
             )
