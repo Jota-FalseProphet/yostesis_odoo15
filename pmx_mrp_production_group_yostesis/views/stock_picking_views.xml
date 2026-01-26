@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <record id="view_stock_picking_form_inherit_pmx_ops_total" model="ir.ui.view">
+      <field name="name">stock.picking.form.inherit.pmx.ops.total</field>
+      <field name="model">stock.picking</field>
+      <field name="inherit_id" ref="stock.view_picking_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//page[@name='operations']/field[@name='move_ids_without_package']" position="before">
+          <group>
+            <field name="pmx_operations_total_display" string="Total de Operaciones" readonly="1"/>
+          </group>
+        </xpath>
+      </field>
+    </record>
+
+    <!-- <record id="view_stock_picking_form_inherit_pmx_move_total_col" model="ir.ui.view">
+      <field name="name">stock.picking.form.inherit.pmx.move.total.col</field>
+      <field name="model">stock.picking</field>
+      <field name="inherit_id" ref="stock.view_picking_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//page[@name='operations']//field[@name='move_ids_without_package']//tree//field[@name='product_uom_qty']" position="after">
+          <field name="pmx_operations_total_display" string="Total de Operaciones" readonly="1"/>
+        </xpath>
+      </field>
+    </record> -->
+
+
+
+  </data>
+</odoo>

@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <record id="action_mrp_production_group" model="ir.actions.act_window">
+      <field name="name">Agrupaciones de OF</field>
+      <field name="res_model">mrp.production.group</field>
+      <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_mrp_production_group_root"
+              name="Agrupaciones de OF"
+              parent="mrp.menu_mrp_manufacturing"
+              sequence="80"
+              action="action_mrp_production_group"/>
+
+    <menuitem id="menu_stock_mrp_production_group"
+              name="Agrupaciones de OF"
+              parent="stock.menu_stock_warehouse_mgmt"
+              sequence="15"
+              action="action_mrp_production_group"/>
+
+    <record id="view_mrp_production_group_tree" model="ir.ui.view">
+      <field name="name">mrp.production.group.tree</field>
+      <field name="model">mrp.production.group</field>
+      <field name="arch" type="xml">
+        <tree>
+          <field name="name"/>
+          <field name="state"/>
+          <field name="group_date"/>
+          <field name="start_date"/>
+          <field name="company_id"/>
+          <field name="production_count"/>
+          <field name="picking_type_id"/>
+          <field name="picking_id"/>
+        </tree>
+      </field>
+    </record>
+
+    <record id="view_mrp_production_group_form" model="ir.ui.view">
+      <field name="name">mrp.production.group.form</field>
+      <field name="model">mrp.production.group</field>
+      <field name="arch" type="xml">
+        <form>
+
+          <header>
+            <field name="state" widget="statusbar"
+                   statusbar_visible="draft,picking_generated,partial_done,done"/>
+
+
+            <button name="action_create_preparation_picking"
+                    type="object"
+                    string="Crear albarán preparación"
+                    class="btn-primary"
+                    attrs="{'invisible':[('picking_id','!=',False)]}"/>
+
+            <button name="action_open_picking"
+                    type="object"
+                    string="Ver albarán"
+                    class="btn-secondary"
+                    attrs="{'invisible':[('picking_id','=',False)]}"/>
+
+            <button name="action_open_add_mos_wizard"
+                    type="object"
+                    string="Añadir OF"
+                    class="btn-secondary"/>
+
+            <button name="action_rebuild_components"
+                    type="object"
+                    string="Regenerar componentes"
+                    groups="mrp.group_mrp_manager"
+                    confirm="Esto recalculará los componentes desde las OF y puede sobrescribir ajustes/exclusiones. ¿Continuar?"/>
+
+          </header>
+
+          <sheet>
+
+            <!-- Campos técnicos (mejor arriba para que estén disponibles a attrs) -->
+            <field name="picking_all_ids" invisible="1"/>
+            <field name="picking_all_count" invisible="1"/>
+
+            <!-- Smart button -->
+            <div class="o_not_full oe_button_box" name="button_box">
+              <button name="action_open_group_pickings"
+                      type="object"
+                      class="oe_stat_button"
+                      icon="fa-truck"
+                      attrs="{'invisible': [('picking_all_count', '=', 0)]}">
+                <field name="picking_all_count"
+                       widget="statinfo"
+                       string="Albaranes"/>
+              </button>
+            </div>
+
+            <div class="oe_title">
+              <h1>
+                <field name="name" placeholder="Nueva agrupación"/>
+              </h1>
+            </div>
+
+            <group>
+              <field name="group_date" string="Fecha de agrupación"/>
+              <field name="start_date" string="Fecha de inicio de la primera OF"/>
+              <field name="company_id" groups="base.group_multi_company" string="Compañía"/>
+
+              <field name="picking_type_id"/>
+
+              <field name="note" placeholder="Notas para el albarán de preparación..."/>
+
+              <field name="picking_id" readonly="1" options="{'no_create_edit': True}"/>
+            </group>
+
+            <notebook>
+
+              <page string="Órdenes de fabricación" name="pmx_productions">
+                <field name="production_m2m_ids"
+                        domain="[('group_id', 'in', [False, id]), ('state', 'not in', ('done','cancel'))]"
+                        options="{'no_create': True, 'no_create_edit': True}">
+                  <tree>
+                    <field name="state" column_invisible="1"/>
+                    <button name="action_remove_from_group"
+                            type="object"
+                            string="Quitar"
+                            class="btn-link" invisible="1"/>
+                    <field name="production_link_id"/>
+                    <field name="product_id_display" readonly="1"/>
+                    <field name="sale_order_id" readonly="1"/>
+                    <field name="sale_product_id" readonly="1"/>
+                    <field name="product_qty_display" readonly="1"/>
+                    <field name="date_planned_start" readonly="1"/>
+                  </tree>
+                </field>
+              </page>
+
+              <page string="Componentes detallados" name="pmx_components_detailed">
+                <field name="component_detail_ids" nolabel="1">
+                  <tree create="0" delete="0" edit="1" readonly="1">
+                    <field name="production_id" string="OF"/>
+                    <field name="product_id" string="Producto"/>
+                    <field name="product_tmpl_id" string="Plantilla de Producto"/>
+                    <field name="product_uom_id" string="Unidades de medida"/>
+                    <field name="qty" string="Cantidad"/>
+                    <field name="location_id"/>
+                  </tree>
+                </field>
+              </page>
+
+              <page string="Componentes" name="pmx_components">
+                <field name="component_ids" nolabel="1" readonly="1">
+                  <tree>
+                    <field name="product_id" string="Producto"/>
+                    <field name="product_tmpl_id" string="Plantilla de Producto"/>
+                    <field name="product_uom_id" string="Unidades de medida"/>
+                    <field name="qty_total" string="Cantidad total"/>
+                    <field name="location_id" string="Ubicación de Origen"/>
+                    <field name="qty_available_location_origin" string="Stock de Origen"/>
+                    <!-- <field name="qty_available_location"/> -->
+                  </tree>
+                </field>
+              </page>
+
+            </notebook>
+
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+  </data>
+</odoo>

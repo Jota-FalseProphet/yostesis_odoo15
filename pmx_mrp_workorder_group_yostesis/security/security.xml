@@ -1,0 +1,8 @@
+<odoo>
+  <data>
+    <record id="group_pmx_workorder_grouping_user" model="res.groups">
+      <field name="name">Workorder Grouping User</field>
+      <field name="category_id" ref="base.module_category_manufacturing"/>
+    </record>
+  </data>
+</odoo>

@@ -1,0 +1,16 @@
+<odoo>
+    <data>
+        <record id="view_picking_type_form_inherit_pmx_auto_close_mo" model="ir.ui.view">
+            <field name="name">stock.picking.type.form.inherit.pmx.auto.close.mo</field>
+            <field name="model">stock.picking.type</field>
+            <field name="inherit_id" ref="stock.view_picking_type_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='show_operations']" position="after">
+
+                    <field name="pmx_mrp_group_target_picking_type_id"
+                          attrs="{'invisible': [('code', '!=', 'mrp_operation')]}"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

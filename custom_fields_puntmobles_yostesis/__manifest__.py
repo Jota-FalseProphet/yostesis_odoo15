@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Custom Fields for Puntmobles by Yostesis",
-    "version": "15.0.1.7.4",
+    "version": "15.0.1.7.11",
     "summary": "A bunch for custom fields needed by PuntMobles",
     "description": """
         This is a collection of custom fields required by PuntMobles for their Odoo implementation.
@@ -20,6 +20,8 @@
     "data": [
         "security/ir.model.access.csv",
         "views/mrp_views.xml",
+        "views/account_move_line_views.xml",
+        "views/res_company_views.xml",
         "views/mrp_workorder_views.xml",
         "views/sale_views.xml",
         "views/stock_picking_views.xml",

@@ -1,0 +1,38 @@
+
+<odoo>
+    <data>
+        <record id="pmx_server_action_workorder_start_batch" model="ir.actions.server">
+            <field name="name">Iniciar Órdenes de Trabajo (grupo)</field>
+            <field name="model_id" ref="mrp.model_mrp_workorder"/>
+            <field name="state">code</field>
+            <field name="code">env['mrp.workorder'].browse(env.context.get('active_ids', [])).pmx_action_start_batch()</field>
+            <field name="binding_model_id" ref="mrp.model_mrp_workorder"/>
+            <field name="binding_type">action</field>
+        </record>
+        <record id="pmx_server_action_workorder_pause_batch" model="ir.actions.server">
+            <field name="name">Pausar Órdenes de Trabajo (grupo)</field>
+            <field name="model_id" ref="mrp.model_mrp_workorder"/>
+            <field name="state">code</field>
+            <field name="code">env['mrp.workorder'].browse(env.context.get('active_ids', [])).pmx_action_pause_batch()</field>
+            <field name="binding_model_id" ref="mrp.model_mrp_workorder"/>
+            <field name="binding_type">action</field>
+        </record>
+            <record id="pmx_server_action_workorder_finish_batch" model="ir.actions.server">
+            <field name="name">Finalizar Órdenes de Trabajo (grupo)</field>
+            <field name="model_id" ref="mrp.model_mrp_workorder"/>
+            <field name="state">code</field>
+            <field name="code">env['mrp.workorder'].browse(env.context.get('active_ids', [])).pmx_action_finish_batch()</field>
+            <field name="binding_model_id" ref="mrp.model_mrp_workorder"/>
+            <field name="binding_type">action</field>
+        </record>
+        <record id="pmx_server_action_workorder_reopen_single" model="ir.actions.server">
+            <field name="name">Reabrir Órden de Trabajo (1)</field>
+            <field name="model_id" ref="mrp.model_mrp_workorder"/>
+            <field name="state">code</field>
+            <field name="code">env['mrp.workorder'].browse(env.context.get('active_ids', [])).pmx_action_reopen_done_single()</field>
+            <field name="binding_model_id" ref="mrp.model_mrp_workorder"/>
+            <field name="binding_type">action</field>
+            <field name="binding_view_types">list</field>
+        </record>
+    </data>
+</odoo>

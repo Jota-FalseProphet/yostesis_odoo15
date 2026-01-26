@@ -1,0 +1,1 @@
+from . import mrp_auto_close_mo

@@ -1,0 +1,41 @@
+<odoo>
+    <data>
+        <record id="view_mrp_workorder_tree_inherit_pmx_group" model="ir.ui.view">
+            <field name="name">mrp.workorder.tree.inherit.pmx.group</field>
+            <field name="model">mrp.workorder</field>
+            <field name="inherit_id" ref="mrp.mrp_production_workorder_tree_editable_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//tree" position="inside">
+                <field name="pmx_group_name" optional="show"/>
+                <field name="pmx_group_start_date" optional="show"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_mrp_workorder_tree_add_reopen" model="ir.ui.view">
+            <field name="name">mrp.workorder.tree.add.reopen</field>
+            <field name="model">mrp.workorder</field>
+            <field name="inherit_id" ref="mrp.mrp_production_workorder_tree_view"/>
+            <field name="active" eval="False"/>
+            <field name="arch" type="xml">
+                <xpath expr="//tree" position="inside"/>
+            </field>
+        </record>
+    <!--  <record id="view_mrp_workorder_form_add_reopen" model="ir.ui.view">
+            <field name="name">mrp.workorder.form.add.reopen</field>
+            <field name="model">mrp.workorder</field>
+            <field name="inherit_id" ref="mrp.mrp_production_workorder_form_view_inherit"/>
+            <field name="arch" type="xml">
+                <xpath expr="//header" position="inside">
+                <button name="button_reopen" type="object" string="Reabrir"
+                        class="btn-secondary"
+                        attrs="{'invisible': ['|','|',
+                                            ('state','!=','done'),
+                                            ('production_id.state','in',('done','cancel')),
+                                            ('working_state','=','blocked')
+                                            ]}"/>
+                </xpath>
+            </field>
+            </record>  -->
+    </data>
+</odoo>

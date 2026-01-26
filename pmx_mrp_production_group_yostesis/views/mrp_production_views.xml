@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <record id="view_mrp_production_form_inherit_group" model="ir.ui.view">
+      <field name="name">mrp.production.form.inherit.group</field>
+      <field name="model">mrp.production</field>
+      <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+      <field name="arch" type="xml">
+        <xpath expr="//field[@name='product_id']" position="after">
+          <field name="group_id" options="{'no_create_edit': True}"/>
+        </xpath>
+      </field>
+    </record>
+
+    <record id="view_mrp_production_tree_inherit_group" model="ir.ui.view">
+      <field name="name">mrp.production.tree.inherit.group</field>
+      <field name="model">mrp.production</field>
+      <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>
+      <field name="arch" type="xml">
+        <xpath expr="//tree/field[@name='name']" position="after">
+          <field name="group_name" optional="show"/>
+          <field name="group_start_date" optional="show"/>
+        </xpath>
+      </field>
+    </record>
+    
+  </data>
+</odoo>

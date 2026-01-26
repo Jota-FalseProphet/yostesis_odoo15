@@ -1,0 +1,123 @@
+<odoo>
+  <data>
+    <record id="view_mrp_production_group_add_wizard_form" model="ir.ui.view">
+      <field name="name">mrp.production.group.add.wizard.form</field>
+      <field name="model">mrp.production.group.add.wizard</field>
+      <field name="arch" type="xml">
+        <form string="Filtro de Órdenes de Fabricación">
+          <field name="wizard_key" invisible="1"/>
+          <field name="group_id" invisible="1"/>
+          <field name="available_attribute_value_ids" invisible="1"/>
+          <field name="available_attribute_type_ids" invisible="1"/>
+
+          <sheet>
+
+            <group attrs="{'invisible':[('group_id','=',False)]}">
+              <field name="group_id" readonly="1"/>
+            </group>
+
+            <group string="Criterios">
+                <!-- <field name="picking_type_id" options="{'no_create_edit': True}" required="1"/> -->
+                <field name="picking_type_id" options="{'no_create_edit': True}" domain="[('code','=','mrp_operation')]"/>
+                <field name="planned_start_from"/>
+                <field name="planned_start_to"/>
+
+                <field name="workcenter_ids" widget="many2many_tags"/>
+                <field name="attribute_type_ids" widget="many2many_tags"/>
+            </group>
+
+            <!-- Fila especial: valores + lupa, ocupando todo el ancho sin romper el grid -->
+            <group col="2" colspan="2" class="o_group pmx_attr_value_row">
+                <label for="attribute_value_ids" string="Valores del atributo"/>
+
+                <div class="pmx_attr_value_wrap">
+                    <field name="attribute_value_ids"
+                          nolabel="1"
+                          widget="many2many_tags"
+                          domain="[('wizard_key','=', wizard_key)]"
+                          placeholder="Pulsa 'Buscar' para cargar valores..."/>
+
+                    <button name="action_search"
+                            type="object"
+                            icon="fa-search"
+                            class="btn btn-link pmx_attr_value_btn"
+                            title="Cargar valores disponibles"/>
+                </div>
+            </group>
+
+            <!-- Sigue el resto de criterios en un group normal -->
+            <group col="2" colspan="2" class="o_group pmx_attr_value_row">
+                <label for="width_value_ids" string="Anchor/Grosor"/>
+                <div class="pmx_attr_value_wrap">
+                    <field name="width_value_ids"
+                          nolabel="1"
+                          widget="many2many_tags"
+                          domain="[('wizard_key','=', wizard_key), ('kind','=','width')]"
+                          placeholder="Pulsa 'Buscar' para cargar valores..."/>
+
+                    <button name="action_search"
+                            type="object"
+                            icon="fa-search"
+                            class="btn btn-link pmx_attr_value_btn"
+                            title="Cargar medidas disponibles"/>
+                </div>
+
+                <field name="height_value_ids"
+                      widget="many2many_tags"
+                      domain="[('wizard_key','=', wizard_key), ('kind','=','height')]"/>
+
+                <field name="length_value_ids"
+                      widget="many2many_tags"
+                      domain="[('wizard_key','=', wizard_key), ('kind','=','length')]"/>
+                <label for="code_prefix_search" string="Prefijo Modelo"/>
+
+                  <div class="o_row">
+                      <field name="code_prefix_search" nolabel="1" class="oe_inline" placeholder="Buscar..."/>
+                      <span class="oe_inline" style="margin: 0 8px;"/>
+                      <field name="code_prefix_search_2" nolabel="1" class="oe_inline" placeholder="Buscar..."/>
+                      <span class="oe_inline" style="margin: 0 8px;"/>
+                      <field name="code_prefix_search_3" nolabel="1" class="oe_inline" placeholder="Buscar..."/>
+                      <span class="oe_inline" style="margin: 0 8px;"/>
+                      <field name="code_prefix_search_4" nolabel="1" class="oe_inline" placeholder="Buscar..."/>
+                  </div>
+                <field name="model_product_ids" widget="many2many_tags" options="{'no_create_edit': True}" string="Producto a fabricar"/>
+                <field name="sale_order_ids" widget="many2many_tags" options="{'no_create_edit': True}"/>
+                <field name="product_id" widget="many2many_tags" options="{'no_create_edit': True}" string="Producto de venta"/>
+
+                <field name="exclude_grouped" invisible="1"/>
+            </group>
+
+            <group string="Resultado">
+              <group col="4" class="o_group">
+                <field name="mo_count" readonly="1"/>
+                <field name="total_product_qty" readonly="1"/>
+              </group>
+
+              <field name="mo_ids" nolabel="1" readonly="1"
+                     options="{'no_open': True, 'no_create': True, 'no_create_edit': True}">
+                <tree>
+                  <field name="name" readonly="1" string="OF"/>
+                  <field name="product_id" readonly="1"/>
+                  <field name="product_qty" readonly="1"/>
+                  <field name="date_planned_start" readonly="1"/>
+                  <field name="sale_order_origin_id" readonly="1"/>
+                  <field name="group_id" readonly="1" invisible="1"/>
+                </tree>
+              </field>
+            </group>
+
+          </sheet>
+
+          <footer>
+            <button name="action_search" type="object" string="Buscar" class="btn-secondary"/>
+            <button name="action_apply_filter" type="object" string="Aplicar filtro" class="btn-primary"/>
+            <button name="action_add" type="object" string="Añadir a la agrupación" class="btn-primary"
+                    attrs="{'invisible':[('group_id','=',False)]}"/>
+            <button string="Cancelar" special="cancel" class="btn-link"/>
+          </footer>
+
+        </form>
+      </field>
+    </record>
+  </data>
+</odoo>

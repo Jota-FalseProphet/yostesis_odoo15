@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="0">
+
+  <record id="mrp.action_work_orders" model="ir.actions.act_window">
+    <field name="context">{'search_default_workcenter_id': active_id, 'search_default_waiting': 1}</field>
+  </record>
+
+</odoo>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <record id="mrp_production_tree_inherit_show_agof" model="ir.ui.view">
+      <field name="name">mrp.production.tree.inherit.show.agof</field>
+      <field name="model">mrp.production</field>
+      <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>
+      <field name="arch" type="xml">
+        <xpath expr="//tree/field[@name='name']" position="after">
+          <field name="group_id" string="AGOF" optional="show"/>
+        </xpath>
+      </field>
+    </record>
+
+    <record id="mrp_production_search_inherit_agof" model="ir.ui.view">
+      <field name="name">mrp.production.search.inherit.agof</field>
+      <field name="model">mrp.production</field>
+      <field name="inherit_id" ref="mrp.view_mrp_production_filter"/>
+      <field name="arch" type="xml">
+        <xpath expr="//search" position="inside">
+          <field name="group_id" string="AGOF"/>
+          <filter string="AGOF" name="groupby_agof" context="{'group_by': 'group_id'}"/>
+        </xpath>
+      </field>
+    </record>
+
+    <record id="mrp_workorder_tree_inherit_show_agof" model="ir.ui.view">
+      <field name="name">mrp.workorder.tree.inherit.show.agof</field>
+      <field name="model">mrp.workorder</field>
+      <field name="inherit_id" ref="mrp.mrp_production_workorder_tree_view"/>
+      <field name="arch" type="xml">
+        <xpath expr="//tree/field[@name='name']" position="after">
+          <field name="production_group_id" string="AGOF" optional="show"/>
+        </xpath>
+      </field>
+    </record>
+
+    <record id="mrp_workorder_search_inherit_agof_main" model="ir.ui.view">
+      <field name="name">mrp.workorder.search.inherit.agof.main</field>
+      <field name="model">mrp.workorder</field>
+      <field name="inherit_id" ref="mrp.view_mrp_production_work_order_search"/>
+      <field name="arch" type="xml">
+        <xpath expr="//search" position="inside">
+          <field name="production_group_id" string="AGOF"/>
+          <filter string="AGOF" name="groupby_agof" context="{'group_by': 'production_group_id'}"/>
+        </xpath>
+      </field>
+    </record>
+
+    <record id="mrp_workorder_search_inherit_agof_select" model="ir.ui.view">
+      <field name="name">mrp.workorder.search.inherit.agof.select</field>
+      <field name="model">mrp.workorder</field>
+      <field name="inherit_id" ref="mrp.view_mrp_production_workorder_form_view_filter"/>
+      <field name="arch" type="xml">
+        <xpath expr="//search" position="inside">
+          <field name="production_group_id" string="AGOF"/>
+          <filter string="AGOF" name="groupby_agof" context="{'group_by': 'production_group_id'}"/>
+        </xpath>
+      </field>
+    </record>
+
+  </data>
+</odoo>

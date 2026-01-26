@@ -1,0 +1,15 @@
+<odoo>
+    <data noupdate="1">
+        <record id="ir_cron_pmx_auto_close_mo" model="ir.cron">
+            <field name="name">MRP: Auto cerrar OF en Para Cerrar</field>
+            <field name="model_id" ref="mrp.model_mrp_production"/>
+            <field name="state">code</field>
+            <field name="code">model.pmx_cron_auto_close_to_close()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">5</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="active">True</field>
+        </record>
+    </data>
+</odoo>
