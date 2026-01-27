@@ -17,7 +17,6 @@
             </group>
 
             <group string="Criterios">
-                <!-- <field name="picking_type_id" options="{'no_create_edit': True}" required="1"/> -->
                 <field name="picking_type_id" options="{'no_create_edit': True}" domain="[('code','=','mrp_operation')]"/>
                 <field name="planned_start_from"/>
                 <field name="planned_start_to"/>
@@ -26,7 +25,6 @@
                 <field name="attribute_type_ids" widget="many2many_tags"/>
             </group>
 
-            <!-- Fila especial: valores + lupa, ocupando todo el ancho sin romper el grid -->
             <group col="2" colspan="2" class="o_group pmx_attr_value_row">
                 <label for="attribute_value_ids" string="Valores del atributo"/>
 
@@ -45,7 +43,6 @@
                 </div>
             </group>
 
-            <!-- Sigue el resto de criterios en un group normal -->
             <group col="2" colspan="2" class="o_group pmx_attr_value_row">
                 <label for="width_value_ids" string="Anchor/Grosor"/>
                 <div class="pmx_attr_value_wrap">

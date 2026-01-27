@@ -5,6 +5,7 @@ import unicodedata
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from odoo.tools.float_utils import float_compare
+from dateutil.relativedelta import relativedelta
 
 _logger = logging.getLogger(__name__)
 
@@ -28,10 +29,10 @@ class MrpProductionGroupAddWizard(models.TransientModel):
         domain=[("code", "=", "mrp_operation")],
     )
 
-    planned_start_from = fields.Datetime(
+    planned_start_from = fields.Date(
         string="Fecha prevista desde"
     )
-    planned_start_to = fields.Datetime(
+    planned_start_to = fields.Date(
         string="Fecha prevista hasta"
     )
     
@@ -53,7 +54,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
 
     workcenter_ids = fields.Many2many(
         "mrp.workcenter",
-        string="Centro(s) de producción",
+        string="Primer centro de producción",
         relation="mrp_pg_addw_wc_rel",
         column1="wizard_id",
         column2="workcenter_id",
@@ -230,6 +231,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
         readonly=True,
     )
     
+    
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
@@ -266,16 +268,19 @@ class MrpProductionGroupAddWizard(models.TransientModel):
 
         return res
 
+
     def _ensure_wizard_key(self):
         for w in self:
             if not w.wizard_key:
                 w.wizard_key = uuid.uuid4().hex
+
 
     def _get_company_id(self):
         self.ensure_one()
         if self.group_id:
             return self.group_id.company_id.id
         return self.env.company.id
+
 
     def _has_component_filters(self):
         self.ensure_one()
@@ -287,9 +292,11 @@ class MrpProductionGroupAddWizard(models.TransientModel):
             or self.width_value_ids
         )
 
+
     def _has_any_extra_filters(self):
         self.ensure_one()
         return bool(self._has_component_filters() or self.workcenter_ids)
+
 
     def _attribute_type_field_name(self):
         Attr = self.env["product.attribute"]
@@ -302,6 +309,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
             if getattr(f, "comodel_name", None) == "product.attribute.type":
                 return fname
         return False
+
 
     def _check_measure_fields_available(self):
         self.ensure_one()
@@ -356,6 +364,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
             dom = ["|"] + dom + [t]
         return dom
 
+
     def _sale_names_from_origin_strings(self, origins):
         out = []
         for o in origins or []:
@@ -370,6 +379,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
                     out.append(token)
         return list(dict.fromkeys(out))
 
+
     def _or_domain(self, field_name, operator, values):
         values = [v for v in (values or []) if v]
         if not values:
@@ -378,6 +388,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
         for v in values[1:]:
             dom = ["|"] + dom + [(field_name, operator, v)]
         return dom
+
 
     def _norm_value_name(self, s):
         s = s or ""
@@ -388,6 +399,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
         s = s.replace("×", "x")
         s = re.sub(r"\s+", " ", s).strip()
         return s
+
 
     @api.depends("mo_ids", "mo_ids.product_qty")
     def _compute_preview_stats(self):
@@ -410,6 +422,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
             seen.add(k)
             out.append(n2)
         return out
+
 
     def _sync_attr_value_name_records(self, names):
         self.ensure_one()
@@ -448,6 +461,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
 
         return Model.browse(ids)
 
+
     def _cleanup_network_selections(self):
         self.ensure_one()
 
@@ -483,6 +497,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
         attrs |= product.product_tmpl_id.attribute_line_ids.mapped("attribute_id")
         return attrs.exists()
 
+
     def _mo_component_products(self, mo):
         moves = mo.move_raw_ids.filtered(lambda m: m.state != "cancel" and m.product_id)
         prods = moves.mapped("product_id")
@@ -491,6 +506,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
         if mo.bom_id:
             return mo.bom_id.bom_line_ids.mapped("product_id")
         return self.env["product.product"].browse()
+
 
     def _product_values_for_attr(self, product, attr):
         tmpl = product.product_tmpl_id
@@ -512,6 +528,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
                 vals |= line.mapped("value_ids")
 
         return vals
+
 
     def _product_matches_component_filters(self, product):
         self.ensure_one()
@@ -586,13 +603,16 @@ class MrpProductionGroupAddWizard(models.TransientModel):
                 return False
 
         return True
+
     
     def action_search_attribute_values(self):
         return self.action_search()
 
+
     def _mo_products_to_check(self, mo):
         self.ensure_one()
         return (mo.product_id | self._mo_component_products(mo)).exists()
+
 
     def _filter_mos_by_components(self, mos):
         self.ensure_one()
@@ -609,6 +629,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
 
         return mos.filtered(mo_ok)
 
+
     def _mo_workcenters(self, mo):
         WC = self.env["mrp.workcenter"].browse()
 
@@ -624,17 +645,44 @@ class MrpProductionGroupAddWizard(models.TransientModel):
 
         return WC
 
+
+    def _first_workcenter_id(self, mo):
+        wo = mo.workorder_ids.sorted(key=lambda w: (w._sequence, w.id))[:1]
+        if wo:
+            return wo.workcenter_id.id
+        return False
+
+
+    def _mo_workcenters_prefix_ids(self, mo, depth):
+        depth = int(depth or 0)
+        if depth <= 0:
+            return []
+
+        if "workorder_ids" in mo._fields and mo.workorder_ids:
+            wos = mo.workorder_ids.sorted(key=lambda w: (w._sequence, w.id))[:depth]
+            return wos.mapped("workcenter_id").ids
+
+        if mo.bom_id and "operation_ids" in mo.bom_id._fields and mo.bom_id.operation_ids:
+            ops = mo.bom_id.operation_ids.sorted(key=lambda o: (o._sequence, o.id))[:depth]
+            return ops.mapped("workcenter_id").ids
+
+        return []
+
+
     def _filter_mos_by_workcenters(self, mos):
         self.ensure_one()
         if not self.workcenter_ids:
             return mos
 
         wanted = set(self.workcenter_ids.ids)
+        depth = len(wanted)
 
         def mo_ok(mo):
-            return bool(set(self._mo_workcenters(mo).ids) & wanted)
+            prefix_wc_ids = set(self._mo_workcenters_prefix_ids(mo, depth))
+            return bool(prefix_wc_ids & wanted)
 
         return mos.filtered(mo_ok)
+
 
     def _base_domain(self):
         self.ensure_one()
@@ -654,9 +702,10 @@ class MrpProductionGroupAddWizard(models.TransientModel):
             dom.append(("picking_type_id.code", "=", "mrp_operation"))
 
         if self.planned_start_from:
-            dom.append(("date_planned_start", ">=", self.planned_start_from))
+            dom.append(("date_planned_start", ">=", fields.Datetime.to_datetime(self.planned_start_from)))
         if self.planned_start_to:
-            dom.append(("date_planned_start", "<=", self.planned_start_to))
+            dt_to = fields.Datetime.to_datetime(self.planned_start_to) + relativedelta(days=1)
+            dom.append(("date_planned_start", "<", dt_to))
 
         if self.product_id:
             MO = self.env["mrp.production"]
@@ -668,14 +717,14 @@ class MrpProductionGroupAddWizard(models.TransientModel):
         if self.model_product_ids:
             dom.append(("product_id", "in", self.model_product_ids.ids))
             
-        if self.workcenter_ids:
-            MO = self.env["mrp.production"]
-            terms = []
-            if "workorder_ids" in MO._fields:
-                terms.append(("workorder_ids.workcenter_id", "in", self.workcenter_ids.ids))
-            if "bom_id" in MO._fields and "operation_ids" in self.env["mrp.bom"]._fields:
-                terms.append(("bom_id.operation_ids.workcenter_id", "in", self.workcenter_ids.ids))
-            dom += self._or_domain_terms(terms)
+        # if self.workcenter_ids:
+        #     MO = self.env["mrp.production"]
+        #     terms = []
+        #     if "workorder_ids" in MO._fields:
+        #         terms.append(("workorder_ids.workcenter_id", "in", self.workcenter_ids.ids))
+        #     if "bom_id" in MO._fields and "operation_ids" in self.env["mrp.bom"]._fields:
+        #         terms.append(("bom_id.operation_ids.workcenter_id", "in", self.workcenter_ids.ids))
+        #     dom += self._or_domain_terms(terms)
 
         if self.sale_order_ids:
             MO = self.env["mrp.production"]
@@ -752,6 +801,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
                 dom += self._or_domain_terms(terms)
                         
         return dom
+
 
     #@api.depends("mo_ids", "group_id", "attribute_type_ids", "attribute_value_ids")
     def _compute_available_network(self):
@@ -988,13 +1038,9 @@ class MrpProductionGroupAddWizard(models.TransientModel):
                 _logger.exception("Error calculando available_* en wizard_key=%s", w.wizard_key)
                 raise 
 
+
     def _recompute_candidates_and_domains(self):
         self.ensure_one()
-
-        # if not self.picking_type_id:
-        #     self.mo_ids = [(5, 0, 0)]
-        #     self.warning_msg = False
-        #     return
 
         dom = self._base_domain()
 
@@ -1005,7 +1051,10 @@ class MrpProductionGroupAddWizard(models.TransientModel):
         MO = self.env["mrp.production"]
         order = "date_planned_start asc, id asc"
 
-        if not self._has_component_filters():
+        has_components = self._has_component_filters()
+        has_wc = bool(self.workcenter_ids)
+
+        if (not has_components) and (not has_wc):
             mos = MO.search(dom, order=order, limit=limit + 1)
             truncated = len(mos) > limit
             mos = mos[:limit]
@@ -1032,7 +1081,11 @@ class MrpProductionGroupAddWizard(models.TransientModel):
             offset += batch
             scanned += len(chunk)
 
-            chunk = self._filter_mos_by_components(chunk)
+            if has_components:
+                chunk = self._filter_mos_by_components(chunk)
+            if has_wc:
+                chunk = self._filter_mos_by_workcenters(chunk)
+
             for mo in chunk:
                 if mo.id in seen:
                     continue
@@ -1058,6 +1111,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
             ) % {"max_scan": max_scan}
         else:
             self.warning_msg = False
+
 
     @api.onchange(
         "picking_type_id",
@@ -1088,6 +1142,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
             w.warning_msg = _("Filtros cambiados. Pulsa 'Buscar' para recalcular.")
             w.mo_ids = [(5, 0, 0)]
 
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -1102,6 +1157,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
             # w._cleanup_network_selections()
         return records
 
+
     def action_search(self):
         self.ensure_one()
         # if not self.picking_type_id:
@@ -1115,6 +1171,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
             "res_id": self.id,
             "target": "new",
         }
+
 
     def action_apply_filter(self):
         self.ensure_one()
