@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_mrp_production_group_add_wizard_form_inherit" model="ir.ui.view">
+        <field name="name">mrp.production.group.add.wizard.form.origin.sale</field>
+        <field name="model">mrp.production.group.add.wizard</field>
+        <field name="inherit_id" ref="pmx_mrp_production_group_yostesis.view_mrp_production_group_add_wizard_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='planned_start_to']" position="after">
+                <field name="commitment_date_from"/>
+                <field name="commitment_date_to"/>
+            </xpath>
+            <xpath expr="//field[@name='sale_order_ids']" position="after">
+                <field name="origin_product_ids" widget="many2many_tags" options="{'no_create_edit': True}" invisible="1"/>
+                <field name="coleccion_search" string="Colección"/>
+            </xpath>
+            <xpath expr="//field[@name='date_planned_start']" position="after">
+                <field name="sale_commitment_date" readonly="1" widget="date"/>
+                <field name="origin_product_id" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

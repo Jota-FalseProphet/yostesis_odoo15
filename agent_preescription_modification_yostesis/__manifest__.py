@@ -1,0 +1,21 @@
+{
+    'name': "Agent Preescription Modification",
+    'version': '15.0.1.1',
+    'author': "yostesis.Online SL.",
+    'website': "https://yostesis.online",
+    'support': 'soporte@yostesis.cloud',
+    'category': 'Sales',
+    'license': 'LGPL-3',
+    'depends': ['sale', 'commission'],
+    'data': [
+        'security/ir.model.access.csv',
+        'data/agent_type_data.xml',
+        'views/agent_type_views.xml',
+        'views/res_partner_views.xml',
+        'views/sale_order_views.xml',
+    ],
+    'post_init_hook': 'post_init_hook',
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}

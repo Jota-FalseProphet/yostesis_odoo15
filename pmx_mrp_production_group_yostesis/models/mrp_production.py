@@ -2,52 +2,53 @@ from collections import defaultdict
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
-
 class MrpProduction(models.Model):
     _inherit = "mrp.production"
 
-    group_id = fields.Many2one("mrp.production.group", index=True, copy=False)
+    group_id = fields.Many2one(
+        "mrp.production.group",
+        index=True,
+        copy=False
+    )
     group_name = fields.Char(related="group_id.name", store=True)
-    group_start_date = fields.Date(related="group_id.start_date", store=True)
+    group_start_date = fields.Date(
+        related="group_id.start_date",
+        string="Fecha de agrupación",
+        store=True
+    )
     # group_origin_display = fields.Char(compute="_compute_group_origin_display")
     product_id_display = fields.Many2one(
-    "product.product",
-    related="product_id",
-    readonly=True,
-    string="Producto",
-    )
-    product_qty_display = fields.Float(
-        related="product_qty",
+        "product.product",
+        related="product_id",
         readonly=True,
-        string="Cantidad",
+        string="Producto",
     )
+    product_qty_display = fields.Float(related="product_qty", readonly=True, string="Cantidad")
     production_link_id = fields.Many2one(
         comodel_name="mrp.production",
         string="OF",
         compute="_compute_production_link_id",
-        store=False,
+        store=False
     )
-    
     sale_order_origin_id = fields.Many2one(
         comodel_name="sale.order",
         string="Origen",
         compute="_compute_sale_order_origin_id",
-        readonly=True,
+        readonly=True
     )
-    
     sale_order_id = fields.Many2one(
         "sale.order",
         string="Pedido de venta",
         compute="_compute_sale_links",
-        readonly=True,
+        readonly=True
     )
     sale_product_id = fields.Many2one(
         "product.product",
         string="Producto de venta",
         compute="_compute_sale_links",
-        readonly=True,
+        readonly=True
     )
-    
+
     @api.depends("procurement_group_id", "origin")
     def _compute_sale_links(self):
         SaleOrder = self.env["sale.order"]
@@ -67,16 +68,12 @@ class MrpProduction(models.Model):
 
             if has_sale_line_field:
                 sol = mo.sale_line_id
-
             if not sol and has_move_dest and stock_move_has_sol:
                 sol = (mo.move_dest_ids.mapped("sale_line_id")).filtered(lambda l: l)[:1]
-
             if sol:
                 so = sol.order_id
-
             if not so and mo.procurement_group_id:
                 so = so_by_group.get(mo.procurement_group_id.id)
-
             if not so and mo.origin:
                 so = SaleOrder.search([("name", "=", mo.origin)], limit=1)
 
@@ -87,43 +84,14 @@ class MrpProduction(models.Model):
         for rec in self:
             rec.production_link_id = rec
 
-    
-    def action_create_group_from_selection(self):
-        mos = self
-        if not mos:
-            raise UserError(_("No hay órdenes seleccionadas."))
-
-        mos_to_group = mos.filtered(lambda m: not m.group_id)
-        if not mos_to_group:
-            raise UserError(_("Todas las órdenes seleccionadas ya están agrupadas."))
-
-        companies = mos_to_group.mapped("company_id")
-        if len(companies) != 1:
-            raise UserError(_("Las órdenes seleccionadas pertenecen a más de una empresa."))
-
-        group = self.env["mrp.production.group"].create({"company_id": companies.id})
-        mos_to_group.write({"group_id": group.id})
-        group._set_start_date_if_empty()
-
-        return {
-            "type": "ir.actions.act_window",
-            "name": _("Agrupación de OF"),
-            "res_model": "mrp.production.group",
-            "view_mode": "form",
-            "res_id": group.id,
-            "target": "current",
-        }
-
-
     def _compute_sale_order_origin_id(self):
-            if "sale_line_id" not in self._fields:
-                for mo in self:
-                    mo.sale_order_origin_id = False
-                return
-
+        if "sale_line_id" not in self._fields:
             for mo in self:
-                mo.sale_order_origin_id = mo.sale_line_id.order_id if mo.sale_line_id else False
+                mo.sale_order_origin_id = False
+            return
 
+        for mo in self:
+            mo.sale_order_origin_id = mo.sale_line_id.order_id if mo.sale_line_id else False
 
     def action_open_production_form(self):
         self.ensure_one()
@@ -135,13 +103,11 @@ class MrpProduction(models.Model):
             "target": "current",
         }
 
-
     def action_remove_from_group(self):
         for rec in self:
             rec.group_id = False
         return True
-    
-    
+
     @api.model
     def action_open_filter_wizard(self, active_ids=None):
         active_ids = active_ids or []
@@ -162,8 +128,7 @@ class MrpProduction(models.Model):
             "target": "new",
             "context": ctx,
         }
-        
-    
+
     @api.model_create_multi
     def create(self, vals_list):
         recs = super().create(vals_list)
@@ -171,7 +136,6 @@ class MrpProduction(models.Model):
         for g in groups:
             g._ensure_details_for_mos(recs.filtered(lambda r: r.group_id == g))
         return recs
-
 
     def write(self, vals):
         old_group_map = {mo.id: mo.group_id for mo in self}

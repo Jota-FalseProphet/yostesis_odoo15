@@ -8,20 +8,15 @@ class MrpProductionGroupComponentDetail(models.Model):
 
     group_id = fields.Many2one("mrp.production.group", required=True, index=True, ondelete="cascade")
     company_id = fields.Many2one(related="group_id.company_id", store=True, readonly=True)
-
     production_id = fields.Many2one("mrp.production", required=True, index=True, ondelete="cascade")
     move_id = fields.Many2one("stock.move", index=True)  # si viene de move_raw_ids, para navegar
-
     product_id = fields.Many2one("product.product", required=True, index=True)
     product_tmpl_id = fields.Many2one(related="product_id.product_tmpl_id", store=True, readonly=True)
     product_uom_id = fields.Many2one("uom.uom", required=True)
     qty = fields.Float(required=True)
-
     location_id = fields.Many2one("stock.location", index=True, string="Ubicación de Origen")  # ubicación origen prevista (la del picking type)
-    
     excluded = fields.Boolean(string="Excluido", default=False, index=True)
-    
-    
+
     @api.model_create_multi
     def create(self, vals_list):
         recs = super().create(vals_list)
@@ -60,16 +55,12 @@ class MrpProductionGroupComponent(models.Model):
 
     group_id = fields.Many2one("mrp.production.group", required=True, index=True, ondelete="cascade")
     company_id = fields.Many2one(related="group_id.company_id", store=True, readonly=True)
-
     product_id = fields.Many2one("product.product", required=True, index=True)
     product_tmpl_id = fields.Many2one(related="product_id.product_tmpl_id", store=True, readonly=True)
     product_uom_id = fields.Many2one("uom.uom", required=True)
     qty_total = fields.Float(required=True)
-
     location_id = fields.Many2one("stock.location", index=True)
-
     qty_available_location_origin = fields.Float(compute="_compute_qty_available", readonly=True)
-    
 
     @api.depends("product_id", "location_id", "company_id")
     def _compute_qty_available(self):
@@ -80,7 +71,6 @@ class MrpProductionGroupComponent(models.Model):
                 continue
 
             p = p.with_company(rec.company_id)
-
             if rec.location_id:
                 rec.qty_available_location_origin = p.with_context(
                     location=rec.location_id.id,

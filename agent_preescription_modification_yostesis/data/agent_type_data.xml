@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="agent_type_normal" model="agent.type.yostesis">
+            <field name="name">Agente normal</field>
+        </record>
+        <record id="agent_type_preescriptor" model="agent.type.yostesis">
+            <field name="name">Preescriptor</field>
+        </record>
+    </data>
+</odoo>

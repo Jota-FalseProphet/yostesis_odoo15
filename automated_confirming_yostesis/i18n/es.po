@@ -1,0 +1,125 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* automated_confirming_yostesis
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 15.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-04 00:00+0000\n"
+"PO-Revision-Date: 2026-02-04 00:00+0000\n"
+"Last-Translator: Yostesis\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. module: automated_confirming_yostesis
+#: code:addons/automated_confirming_yostesis/models/account_move.py:0
+#, python-format
+msgid "Pagado al Vencimiento en %s"
+msgstr "Pagado al Vencimiento en %s"
+
+#. module: automated_confirming_yostesis
+#: code:addons/automated_confirming_yostesis/models/account_move.py:0
+#, python-format
+msgid "Remesa en proceso de cobro"
+msgstr "Remesa en proceso de cobro"
+
+#. module: automated_confirming_yostesis
+#: code:addons/automated_confirming_yostesis/models/account_move.py:0
+#, python-format
+msgid "Remesado en %s"
+msgstr "Remesado en %s"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_payment_mode_id
+msgid "Factoring Payment Mode"
+msgstr "Modo de cobro Factoring"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_from_date
+msgid "Factoring Automation Start Date"
+msgstr "Fecha de inicio para automatizar Factoring"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_risk_account_id
+msgid "Factoring Debt Account (4311)"
+msgstr "Cuenta de deuda Factoring (4311)"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_debt_account_id
+msgid "Factoring Risk Account (5208)"
+msgstr "Cuenta de riesgo Factoring (5208)"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_journal_id
+msgid "Cancellation Journal"
+msgstr "Diario de cancelación"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_enable_cron
+msgid "Enable Factoring Cron"
+msgstr "Activar cron de Factoring"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,help:automated_confirming_yostesis.field_res_config_settings__confirming_from_date
+msgid "The cron will only process invoices with due date equal to or later than this date."
+msgstr "El cron sólo procesará facturas con fecha de vencimiento igual o posterior a esta."
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,help:automated_confirming_yostesis.field_res_config_settings__confirming_enable_cron
+msgid "If enabled, the cron will automatically process payment orders."
+msgstr "Si está activo, el cron procesará automáticamente las órdenes de cobro."
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_account_move__confirming_cancel_move_id
+msgid "Confirming Payment"
+msgstr "Pago Confirming"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_account_move__is_confirming_cancel_move
+msgid "Confirming Cancellation Entry"
+msgstr "Asiento cancelación Confirming"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_account_move_line__yostesis_confirming_cancel_move_id
+msgid "Confirming Cancel Move"
+msgstr "Asiento cancelación Confirming"
+
+#. module: automated_confirming_yostesis
+#: model_terms:ir.ui.view,arch_db:automated_confirming_yostesis.report_invoice_document_confirming_label
+msgid "Paid at Maturity on"
+msgstr "Pagado al Vencimiento en"
+
+#. module: automated_confirming_yostesis
+#: model_terms:ir.ui.view,arch_db:automated_confirming_yostesis.report_invoice_document_confirming_label
+msgid "Paid on"
+msgstr "Pagado el"
+
+#. module: automated_confirming_yostesis
+#: model_terms:ir.ui.view,arch_db:automated_confirming_yostesis.res_config_settings_view_form_yostesis_confirming
+msgid "Confirming - Factoring"
+msgstr "Confirming - Factoring"
+
+#. module: automated_confirming_yostesis
+#: model_terms:ir.ui.view,arch_db:automated_confirming_yostesis.res_config_settings_view_form_yostesis_confirming
+msgid "Payment mode that the Factoring cron will use to locate payment orders."
+msgstr "Modo de cobro que utilizará el cron de Factoring para localizar órdenes de cobro."
+
+#. module: automated_confirming_yostesis
+#: model_terms:ir.ui.view,arch_db:automated_confirming_yostesis.res_config_settings_view_form_yostesis_confirming
+msgid "Discounted commercial bills account (4311) representing Factoring debt."
+msgstr "Cuenta de efectos descontados (4311) que representa la deuda de Factoring."
+
+#. module: automated_confirming_yostesis
+#: model_terms:ir.ui.view,arch_db:automated_confirming_yostesis.res_config_settings_view_form_yostesis_confirming
+msgid "Risk account for discounted bills (5208) where bank risk will be recorded."
+msgstr "Cuenta de riesgo para efectos descontados (5208) donde se registrará el riesgo bancario."
+
+#. module: automated_confirming_yostesis
+#: model_terms:ir.ui.view,arch_db:automated_confirming_yostesis.res_config_settings_view_form_yostesis_confirming
+msgid "Journal where Factoring cancellation entries will be generated."
+msgstr "Diario donde se generarán los asientos de cancelación de Factoring."

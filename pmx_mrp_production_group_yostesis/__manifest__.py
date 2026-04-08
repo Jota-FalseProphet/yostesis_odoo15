@@ -1,6 +1,6 @@
 {
     "name": "PuntMobles - Agrupación de Órdenes de Fabricación",
-    "version": "15.0.1.5.8",
+    "version": "15.0.1.6.7",
     "category": "Manufacturing",
     "summary": "Agrupar OF con criterios y permitir incluir/quitar OF de una agrupación",
     "depends": ["web", "mrp", "product_attributes_type", "sale"],
@@ -17,8 +17,11 @@
         "views/stock_picking_views.xml",
         "views/stock_picking_type_views.xml",
        # "views/mrp_production_filter_wizard_button_assets.xml",
+        "views/mrp_production_to_group_wizard.xml",
+
+        "views/stock_picking_report.xml"
     ],
-    
+
     "assets": {
         "web.assets_backend": [
             "pmx_mrp_production_group_yostesis/static/src/js/mrp_production_filter_wizard_button.js",

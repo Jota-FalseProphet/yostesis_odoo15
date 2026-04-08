@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="mrp_production_tree_view_inherit" model="ir.ui.view">
+        <field name="name">mrp.production.tree.origin.sale</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='date_planned_start']" position="attributes">
+                <attribute name="string">Fecha ini prev OF</attribute>
+            </xpath>
+            <xpath expr="//field[@name='date_planned_start']" position="after">
+                <field name="sale_commitment_date" optional="show" widget="date"/>
+            </xpath>
+
+            <xpath expr="//field[@name='product_id']" position="replace"/>
+            <xpath expr="//field[@name='sale_commitment_date']" position="after">
+                <field name="product_id" readonly="1" optional="show" string="Producto OF"/>
+            </xpath>
+
+            <xpath expr="//field[@name='product_qty']" position="replace"/>
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="product_qty" sum="Total Qty" string="Cantidad" readonly="1" optional="show"/>
+            </xpath>
+
+            <xpath expr="//field[@name='product_uom_id']" position="replace"/>
+            <xpath expr="//field[@name='product_qty']" position="after">
+                <field name="product_uom_id" string="UdM" options="{'no_open':True,'no_create':True}" groups="uom.group_uom" optional="show"/>
+            </xpath>
+
+            <xpath expr="//field[@name='origin_sale']" position="replace"/>
+            <xpath expr="//field[@name='sale_line_id']" position="replace"/>
+
+            <xpath expr="//field[@name='origin']" position="replace"/>
+            <xpath expr="//field[@name='product_uom_id']" position="after">
+                <field name="origin" optional="show"/>
+                <field name="origin_sale" string="Origen venta" optional="hide"/>
+                <field name="origin_purchase_id" string="Origen compra" optional="hide"/>
+                <field name="display_origin" string="Origen" optional="show"/>
+                <field name="origin_product_id" string="Producto Origen" optional="show"/>
+            </xpath>
+
+            <xpath expr="//field[@name='components_availability']" position="replace"/>
+            <xpath expr="//field[@name='origin_product_id']" position="after">
+                <field name="components_availability" options='{"lazy": true}'
+                    attrs="{'invisible': [('state', 'not in', ['confirmed', 'progress'])]}"
+                    optional="show"
+                    decoration-success="reservation_state == 'assigned' or components_availability_state == 'available'"
+                    decoration-warning="reservation_state != 'assigned' and components_availability_state in ('expected', 'available')"
+                    decoration-danger="reservation_state != 'assigned' and components_availability_state == 'late'"/>
+            </xpath>
+
+            <xpath expr="//field[@name='priority']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='date_deadline']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='lot_producing_id']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='bom_id']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='activity_ids']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='user_id']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='reservation_state']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='production_duration_expected']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='production_real_duration']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='company_id']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="mrp_production_tree_view_hide_group_name" model="ir.ui.view">
+        <field name="name">mrp.production.tree.hide.group.name</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='group_name']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='group_start_date']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_mrp_production_filter_inherit" model="ir.ui.view">
+        <field name="name">mrp.production.search.origin.sale</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.view_mrp_production_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="origin_sale" string="Pedido de venta"/>
+                <field name="origin_purchase_id" string="Pedido de compra"/>
+                <field name="origin_product_id" string="Producto Origen"/>
+                <field name="origin_production_id" string="OF origen"/>
+            </xpath>
+            <xpath expr="//filter[@name='filter_date_planned_start']" position="after">
+                <filter name="filter_sale_commitment_date" string="Fecha ent prev PV" date="sale_commitment_date"/>
+            </xpath>
+            <xpath expr="//filter[@name='scheduled_date']" position="attributes">
+                <attribute name="string">Fecha ini prev OF</attribute>
+            </xpath>
+            <xpath expr="//filter[@name='scheduled_date']" position="after">
+                <filter string="Fecha ent prev PV" name="groupby_sale_commitment_date" domain="[]" context="{'group_by': 'sale_commitment_date'}"/>
+                <filter string="Pedido de venta" name="groupby_origin_sale" domain="[]" context="{'group_by': 'origin_sale'}"/>
+                <filter string="Pedido de compra" name="groupby_origin_purchase_id" domain="[]" context="{'group_by': 'origin_purchase_id'}"/>
+                <filter string="Producto Origen" name="groupby_origin_product_id" domain="[]" context="{'group_by': 'origin_product_id'}"/>
+                <filter string="OF origen" name="groupby_origin_production_id" domain="[]" context="{'group_by': 'origin_production_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

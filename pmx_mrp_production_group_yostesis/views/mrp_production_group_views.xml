@@ -46,38 +46,32 @@
           <header>
             <field name="state" widget="statusbar"
                    statusbar_visible="draft,picking_generated,partial_done,done"/>
-
-
             <button name="action_create_preparation_picking"
                     type="object"
                     string="Crear albarán preparación"
                     class="btn-primary"
-                    attrs="{'invisible':[('picking_id','!=',False)]}"/>
-
+                    attrs="{'invisible':[('pmx_show_create_picking_button','=',False)]}"/>
             <button name="action_open_picking"
                     type="object"
                     string="Ver albarán"
                     class="btn-secondary"
                     attrs="{'invisible':[('picking_id','=',False)]}"/>
-
             <button name="action_open_add_mos_wizard"
                     type="object"
                     string="Añadir OF"
                     class="btn-secondary"/>
-
             <button name="action_rebuild_components"
                     type="object"
                     string="Regenerar componentes"
                     groups="mrp.group_mrp_manager"
                     confirm="Esto recalculará los componentes desde las OF y puede sobrescribir ajustes/exclusiones. ¿Continuar?"/>
-
           </header>
 
           <sheet>
-
             <!-- Campos técnicos (mejor arriba para que estén disponibles a attrs) -->
             <field name="picking_all_ids" invisible="1"/>
             <field name="picking_all_count" invisible="1"/>
+            <field name="pmx_show_create_picking_button" invisible="1"/>
 
             <!-- Smart button -->
             <div class="o_not_full oe_button_box" name="button_box">
@@ -102,11 +96,8 @@
               <field name="group_date" string="Fecha de agrupación"/>
               <field name="start_date" string="Fecha de inicio de la primera OF"/>
               <field name="company_id" groups="base.group_multi_company" string="Compañía"/>
-
               <field name="picking_type_id"/>
-
               <field name="note" placeholder="Notas para el albarán de preparación..."/>
-
               <field name="picking_id" readonly="1" options="{'no_create_edit': True}"/>
             </group>
 

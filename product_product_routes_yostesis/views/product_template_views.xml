@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="product_template_form_view_manage_routes" model="ir.ui.view">
+        <field name="name">product.template.form.manage.routes.variants</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="stock.product_template_form_view_procurement_button"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='operations']/label[@for='route_ids']" position="before">
+                <field name="manage_routes_from_variants"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

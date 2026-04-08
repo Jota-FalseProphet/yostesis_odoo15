@@ -22,6 +22,11 @@
           <field name="group_id" string="AGOF"/>
           <filter string="AGOF" name="groupby_agof" context="{'group_by': 'group_id'}"/>
         </xpath>
+
+        <xpath expr="//search//field[@name='name']" position="replace">
+          <field name="name" string="Manufacturing Order" filter_domain="['|','|', ('name', 'ilike', self), ('origin', 'ilike', self), ('group_id', 'ilike', self)]"/>
+        </xpath>
+        
       </field>
     </record>
 
@@ -44,6 +49,9 @@
         <xpath expr="//search" position="inside">
           <field name="production_group_id" string="AGOF"/>
           <filter string="AGOF" name="groupby_agof" context="{'group_by': 'production_group_id'}"/>
+        </xpath>
+        <xpath expr="//search/field[@name='production_id']" position="replace">
+          <field name="production_id" filter_domain="['|',('production_id', 'ilike', self), ('production_group_id', 'ilike', self)]"/>
         </xpath>
       </field>
     </record>

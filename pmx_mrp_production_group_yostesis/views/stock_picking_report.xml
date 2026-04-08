@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <template id="report_picking_groups"
+                  inherit_id="stock.report_picking"
+                  priority="40">
+
+            <xpath expr="//div[./div[@name='right_box']]" position="replace">
+                <div class="row mb16">
+                    <div class="col-4 d-flex" name="left_box" t-if="o.origin">
+                        <strong>Origin:</strong>
+                        <div t-field="o.origin" t-options="{'widget': 'barcode', 'width': 600, 'height': 100, 'img_style': 'width:300px;height:50px;'}"/>
+                    </div>
+
+                    <div class="row justify-content-end mb16">
+                        <div class="col-4 d-flex" name="right_box">
+                            <strong>Picking:</strong>
+                            <div t-field="o.name" t-options="{'widget': 'barcode', 'width': 600, 'height': 100, 'img_style': 'width:300px;height:50px;'}"/>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </template>
+    </data>
+</odoo>

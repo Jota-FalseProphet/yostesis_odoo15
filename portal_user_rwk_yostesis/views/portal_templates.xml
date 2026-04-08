@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="portal_my_purchase_orders_date_planned" inherit_id="purchase.portal_my_purchase_orders">
+        <xpath expr="//thead/tr[@class='active']/th[2]" position="after">
+            <th class="text-right">
+                <span class='d-none d-md-inline'>Fecha de recepción</span>
+                <span class='d-block d-md-none'>Receipt</span>
+            </th>
+        </xpath>
+        <xpath expr="//t[@t-foreach='orders']/tr/td[2]" position="after">
+            <td class="text-right">
+                <span t-if="order.date_planned" t-field="order.date_planned" t-options="{'widget': 'date'}"/>
+            </td>
+        </xpath>
+    </template>
+
+</odoo>

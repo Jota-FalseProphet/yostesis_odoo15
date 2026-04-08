@@ -9,8 +9,12 @@
         <!-- Cambiamos sólo la etiqueta de pago -->
         <xpath expr="//i[contains(@class, 'o_payment_label')]" position="replace">
             <i class="o_field_widget text-right o_payment_label">
-                <!-- Si es línea de confirming y tenemos 'name' desde Python, usarlo -->
+                <!-- Si es línea de cancel_move confirming -->
                 <t t-if="line.get('is_confirming') and line.get('name')">
+                    <t t-esc="line['name']"/>
+                </t>
+                <!-- Si es línea de riesgo/remesa de confirming -->
+                <t t-elif="line.get('is_confirming_risk') and line.get('name')">
                     <t t-esc="line['name']"/>
                 </t>
                 <!-- Resto de pagos: comportamiento estándar -->

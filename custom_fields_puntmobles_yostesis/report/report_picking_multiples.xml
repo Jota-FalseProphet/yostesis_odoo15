@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="report_picking_multiples">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-set="move_line_ids" t-value="o.picking_ids.mapped('move_line_ids')"/>
+                    <t t-set="pickings_sin_lineas" t-value="o.picking_ids.filtered(lambda p: not p.move_line_ids and p.state not in ('done', 'assigned'))"/>
+                    <t t-set="has_package" t-value="move_line_ids.filtered('result_package_id')" groups="stock.group_tracking_lot"/>
+                    <t t-set="has_serial_number" t-value="move_line_ids.filtered('lot_id')" groups="stock.group_production_lot"/>
+                    <t t-set="locations" t-value="move_line_ids.mapped('location_id').sorted(lambda location: location.complete_name)"/>
+                    <t t-call="web.external_layout">
+                        <div class="page">
+                            <t t-set="unique_partners" t-value="o.picking_ids.mapped('partner_id')"/>
+                            <div t-if="len(unique_partners) == 1">
+                                <strong>Contacto:</strong><br/>
+                                <span t-esc="unique_partners[0].name"/><br/>
+                                <span t-esc="unique_partners[0].street"/><br/>
+                                <t t-if="unique_partners[0].street2">
+                                    <span t-esc="unique_partners[0].street2"/><br/>
+                                </t>
+                                <span t-esc="unique_partners[0].city"/><br/>
+                                <span t-esc="unique_partners[0].state_id.name"/><br/>
+                                <span t-esc="unique_partners[0].country_id.name"/><br/>
+                            </div>
+                            <br/>
+                            <br/>
+
+                            <h3><span t-field="o.name"/></h3>
+                            <div t-if="o.user_id">
+                                <strong>Responsable:</strong>
+                                <span t-field="o.user_id"/>
+                            </div><br/>
+                            <div t-if="o.scheduled_date">
+                                <strong>Fecha:</strong><br/>
+                                <span t-field="o.scheduled_date" t-options="{'widget': 'date'}"/>
+                            </div><br/>
+                            <div t-if="pickings_sin_lineas" style="border: 2px solid #dc3545; background-color: #f8d7da; color: #721c24; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
+                                <strong>Aviso:</strong> Los siguientes albaranes no tienen operaciones detalladas (no están en estado "Preparado" o "Hecho") y no aparecerán en la tabla:
+                                <ul style="margin-bottom: 0;">
+                                    <t t-foreach="pickings_sin_lineas" t-as="p_warn">
+                                        <li><t t-esc="p_warn.name"/> — Estado: <t t-esc="dict(p_warn._fields['state']._description_selection(p_warn.env)).get(p_warn.state, p_warn.state)"/></li>
+                                    </t>
+                                </ul>
+                            </div>
+                            <div t-if="not move_line_ids" style="border: 2px solid #dc3545; background-color: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
+                                <strong>No hay líneas de operación para mostrar.</strong><br/>
+                                Todos los albaranes de este lote deben estar en estado "Preparado" o "Hecho" para poder imprimir este informe.
+                            </div>
+                            <table class="table table-condensed">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Cantidad</th>
+                                        <th>Pedido de compra</th>
+                                        <th t-if="has_serial_number" width="15%">
+                                            <strong>Lote/N° Serie</strong>
+                                        </th>
+                                        <th t-if="has_package" width="15%">
+                                            <strong>Paquete</strong>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <t t-foreach="locations" t-as="location_from">
+                                    <t t-set="loc_move_line" t-value="move_line_ids.filtered(lambda x: x.location_id==location_from)"/>
+                                    <t t-foreach="loc_move_line.location_dest_id" t-as="location_dest">
+                                        <t t-set="move_lines" t-value="loc_move_line.filtered(lambda x: x.location_dest_id==location_dest)"/>
+                                        <tbody>
+                                            <tr>
+                                                <td style="background-color:lightgrey" colspan="5">
+                                                    <p style="margin:0px"><strong>DESDE</strong>
+                                                    <span t-esc="move_lines.location_id.display_name"/></p>
+                                                    <p style="margin:0px"><strong>HASTA</strong>
+                                                    <span t-esc="move_lines.location_dest_id.display_name"/></p>
+                                                </td>
+                                            </tr>
+                                            <tr t-foreach="move_lines" t-as="move_operation">
+                                                <td>
+                                                    <span t-field="move_operation.display_name"/>
+                                                </td>
+                                                <td>
+                                                    <span t-if="has_package or move_operation.state == 'done'"
+                                                          t-esc="sum(move_operation.mapped('qty_done'))"/>
+                                                    <span t-else="" t-esc="sum(move_operation.mapped('product_uom_qty'))"/>
+                                                    <span t-field="move_operation.product_uom_id" groups="uom.group_uom"/>
+                                                </td>
+                                                <td>
+                                                    <span t-if="move_operation.move_id.purchase_line_id"
+                                                          t-esc="move_operation.move_id.purchase_line_id.order_id.name"/>
+                                                    <t t-else="">
+                                                        <t t-set="origin_picking" t-value="env['stock.picking'].search([('name', '=', move_operation.picking_id.origin)], limit=1)"/>
+                                                        <span t-if="origin_picking" t-esc="origin_picking.origin"/>
+                                                    </t>
+                                                </td>
+                                                <td t-if="has_serial_number" class="text-center h6" width="15%">
+                                                    <div t-if="move_operation.lot_id or move_operation.lot_name" t-field="move_operation.lot_id.name" t-options="{'widget': 'barcode', 'humanreadable': 1, 'width': 600, 'height': 100, 'img_style': 'width:100%;height:35px;'}"/>
+                                                </td>
+                                                <td t-if="has_package" width="15%">
+                                                    <span t-field="move_operation.package_id"/>
+                                                    <t t-if="move_operation.result_package_id">
+                                                        <strong>→</strong> <span t-field="move_operation.result_package_id"/>
+                                                    </t>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </t>
+                                </t>
+                            </table>
+                         </div>
+                     </t>
+                 </t>
+            </t>
+        </template>
+    </data>
+</odoo>

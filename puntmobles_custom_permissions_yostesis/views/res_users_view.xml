@@ -9,6 +9,7 @@
                 <group string="Permisos Puntmobles">
                     <field name="restrict_confirm_sale"/>
                     <field name="allow_change_confirmed_sale_customer"/>
+                    <field name="allow_edit_commitment_confirmed"/>
                 </group>
             </xpath>
         </field>

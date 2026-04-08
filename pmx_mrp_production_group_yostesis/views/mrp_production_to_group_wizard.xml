@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- add production to group  -->
+    <record id="mrp_production_to_group_form" model="ir.ui.view">
+        <field name="name">mrp.production.to.group.form</field>
+        <field name="model">mrp.production.to.group</field>
+        <field name="arch" type="xml">
+            <form string="Añadir a agrupación">
+                <group>
+                    <group>
+                        <label for="mode" string="Añadir"/>
+                        <field name="mode" widget="radio" nolabel="1"/>
+                        <field name="group_id" options="{'no_create_edit': True, 'no_open': True}" attrs="{'invisible': [('mode', '=', 'new')], 'required': [('mode', '=', 'existing')]}"/>
+                    </group>
+                </group>
+
+                <footer>
+                    <button name="attach_orders" type="object" string="Confirm" class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

@@ -1,6 +1,6 @@
 {
     'name': "Puntmobles Custom Permissions by Yostesis",
-    'version': '15.0.1.0.5',
+    'version': '15.0.1.1.1',
     'summary': "A module created to manage permissions and crafted for being more escalable.",
     'category': 'Tools',
     'author': "Yostesis",

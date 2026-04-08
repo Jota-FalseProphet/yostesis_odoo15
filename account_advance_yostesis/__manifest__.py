@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Customer/Supplier customized advance account (438/407) - Yostesis",
-    "version": "15.0.4.7.0",
+    "version": "15.0.4.7.6",
     "summary": "Gestión de anticipos: cuenta 438 para clientes y 407 para proveedores; aplicación y conciliación automática.",
     "description": """
         Módulo para mejorar la gestión de anticipos en Odoo (clientes y proveedores).
@@ -36,9 +36,11 @@
         - ADVERTENCIA: Este módulo NO es compatible con el módulo `l10n_es_sale_downpayment_yostesis`. Si un pedido tiene anticipos simples disponibles (advance_payment), el downpayment será bloqueado automáticamente. Elige uno u otro sistema de anticipos para cada pedido, no ambos simultáneamente.
 
         Configuración recomendada:
-        1. En la ficha de la compañía, configurar `Cuenta anticipos clientes (438)` y `Cuenta anticipos proveedores (407)`.
-        2. (Opcional) Configurar `Diario para traspasos de anticipos` para controlar el diario usado al aplicar anticipos a facturas. Si se deja vacío, se usa un diario general por defecto.
-        3. (Opcional) Añadir la cuenta `572002000` como cuenta de liquidez preferente para anticipos de venta — se usa como destino cuando es posible, o se recurre al suspense del diario.
+        1. En Contabilidad → Configuración → Ajustes, sección "Anticipos", configurar:
+           - `Cuenta anticipos clientes (438)`: Cuenta donde se registran los anticipos de clientes.
+           - `Cuenta anticipos proveedores (407)`: Cuenta donde se registran los anticipos a proveedores.
+           - `Diario de aplicación de anticipos`: Diario donde se crean los asientos de reversión. Si se deja vacío, se usa un diario general por defecto.
+        2. (Opcional) Añadir la cuenta `572002000` como cuenta de liquidez preferente para anticipos de venta — se usa como destino cuando es posible, o se recurre al suspense del diario.
 
         Limitaciones / Consideraciones:
         - El módulo asume que las cuentas 438 (clientes) y 407 (proveedores) están presentes o bien configuradas en la compañía. Si no existen, el comportamiento cae a búsquedas por código y eventualmente a errores de usuario en pantallas (por diseño).
@@ -57,7 +59,8 @@
         "purchase_advance_payment",
         ],
     "data": [
-        "views/res_company_view.xml",
+        # "views/res_company_view.xml",
+        "views/res_config_settings_views.xml",
         "views/sale_order_view.xml",
         "report/report_invoice_advance_totals.xml",
     ],

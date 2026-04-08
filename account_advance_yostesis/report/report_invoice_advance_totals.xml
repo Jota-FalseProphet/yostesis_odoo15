@@ -5,7 +5,7 @@
     <xpath expr="//table[contains(@class, 'table-sm') and descendant::t[@t-call='account.document_tax_totals']]" position="inside">
       <t t-set="advance_applied" t-value="o._get_advance_applied_amount()"/>
       
-      <t t-if="advance_applied">
+      <!-- <t t-if="advance_applied">
         <tr>
           <td>
             <span>Anticipos aplicados</span>
@@ -22,7 +22,7 @@
             <span t-field="o.amount_residual"/>
           </td>
         </tr>
-      </t>
+      </t> -->
     </xpath>
 
   </template>

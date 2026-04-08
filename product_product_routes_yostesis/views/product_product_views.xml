@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="product_variant_easy_edit_view_inventory" model="ir.ui.view">
+        <field name="name">product.product.view.form.easy.inventory</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_variant_easy_edit_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='packaging']/.." position="after">
+                <notebook>
+                    <page string="Inventario" name="inventory"
+                          attrs="{'invisible': [('type', '=', 'service')]}">
+                        <group name="inventory">
+                            <group string="Operaciones" name="operations">
+                                <field name="manage_routes_from_variants" invisible="1"/>
+                                <label for="route_ids"
+                                       attrs="{'invisible': [('type', '=', 'service')]}"/>
+                                <div>
+                                    <field name="route_ids" class="mb-0"
+                                           widget="many2many_checkboxes"
+                                           domain="[('product_selectable', '=', True)]"
+                                           attrs="{'invisible': [('type', '=', 'service')]}"/>
+                                </div>
+                            </group>
+                        </group>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

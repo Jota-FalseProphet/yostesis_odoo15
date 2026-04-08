@@ -63,10 +63,13 @@ class AccountMove(models.Model):
             inv_curr = inv.currency_id
             comp_curr = company.currency_id
 
-            journal = Journal.search(
-                [("type", "=", "general"), ("company_id", "=", company.id)],
-                limit=1,
-            )
+            # Usar el diario configurado para aplicación de anticipos, o buscar uno general
+            journal = company.advance_transfer_journal_id
+            if not journal:
+                journal = Journal.search(
+                    [("type", "=", "general"), ("company_id", "=", company.id)],
+                    limit=1,
+                )
             if not journal:
                 raise UserError(
                     _(
@@ -103,27 +106,41 @@ class AccountMove(models.Model):
                     apply_amt_cur = apply_amt_ccy
 
                 else:
+                    # Moneda extranjera: usar los valores ORIGINALES del anticipo
+                    # sin reconvertir, para mantener el tipo de cambio del día del pago.
+
+                    # Disponible en moneda extranjera (ej: CAD)
                     residuals_cur = adv_lines.mapped("amount_residual_currency")
-                    if not residuals_cur:
+                    if not any(residuals_cur):
                         residuals_cur = adv_lines.mapped("amount_currency")
                     credit_available_cur = -sum(residuals_cur)
                     if credit_available_cur <= 0:
+                        continue
+
+                    # Disponible en moneda de compañía (EUR) - valor ORIGINAL del anticipo
+                    credit_available_ccy = -sum(adv_lines.mapped("balance"))
+                    if credit_available_ccy <= 0:
                         continue
 
                     invoice_residual_cur = recv_line.amount_residual_currency
                     if invoice_residual_cur <= 0:
                         break
 
+                    # Calcular cuánto aplicar en moneda extranjera
                     apply_amt_cur = min(credit_available_cur, invoice_residual_cur)
                     if not apply_amt_cur:
                         continue
 
-                    conv_date = inv.invoice_date or inv.date or fields.Date.context_today(self)
-                    apply_amt_ccy = inv_curr._convert(
-                        apply_amt_cur, comp_curr, company, conv_date
-                    )
+                    # Calcular el EUR proporcional usando el tipo de cambio ORIGINAL del anticipo
+                    # en lugar de reconvertir con el tipo de cambio de la factura.
+                    if credit_available_cur:
+                        ratio = apply_amt_cur / credit_available_cur
+                    else:
+                        ratio = 1.0
+                    apply_amt_ccy = credit_available_ccy * ratio
 
-                advance_date = pay_move.date or inv.invoice_date or fields.Date.context_today(self)
+                # Usar la fecha de la factura como fecha contable del asiento de reversión
+                advance_date = inv.invoice_date or inv.date or fields.Date.context_today(self)
 
                 bridge_vals = {
                     "ref": _("Aplicación anticipo %s")
@@ -254,46 +271,111 @@ class AccountMove(models.Model):
             if not adv_lines:
                 continue
 
-            credit_available = sum(adv_lines.mapped("balance")) 
-            if credit_available <= 0:
-                continue
+            inv_curr = inv.currency_id
+            comp_curr = company.currency_id
 
-            inv_ccy = company.currency_id
-            if inv.currency_id == inv_ccy:
-                residual_company = inv.amount_residual
-            else:
-                residual_company = inv.currency_id._convert(
-                    inv.amount_residual, inv_ccy, company, inv.invoice_date or fields.Date.context_today(self)
-                )
-            apply_amt = min(credit_available, residual_company)
-            if not apply_amt:
+            # Disponible en EUR (balance original del anticipo)
+            credit_available_ccy = sum(adv_lines.mapped("balance"))
+            if credit_available_ccy <= 0:
                 continue
 
             pay_line = inv.line_ids.filtered(lambda l: l.account_id.internal_type == "payable")[:1]
             if not pay_line:
                 continue
 
-            journal = pays[0].journal_id
-            if journal.type not in ("general", "bank", "cash"):
-                journal = self.env["account.journal"].search([("type","=","general"),("company_id","=",company.id)], limit=1)
+            # Usar el diario configurado para aplicación de anticipos, o el del pago, o buscar uno general
+            journal = company.advance_transfer_journal_id
+            if not journal:
+                journal = pays[0].journal_id
+                if journal.type not in ("general", "bank", "cash"):
+                    journal = self.env["account.journal"].search([("type","=","general"),("company_id","=",company.id)], limit=1)
             if not journal:
                 continue
 
-            # Usar la fecha del anticipo (pago) en lugar de la fecha de la factura
-            advance_date = adv_lines[0].date if adv_lines else (inv.invoice_date or fields.Date.context_today(self))
-            
-            bridge = self.env["account.move"].create({
-                "ref": _("Aplicación anticipo proveedor %s") % (inv.name or inv.ref or inv.id),
-                "move_type": "entry",
-                "journal_id": journal.id,
-                "date": advance_date,
-                "line_ids": [
-                    (0,0,{"name": _("Aplicación anticipo a %s") % (inv.name or inv.ref or inv.id),
-                        "account_id": pay_line.account_id.id, "debit": apply_amt, "partner_id": partner.id}),
-                    (0,0,{"name": _("Aplicación anticipo a %s") % (inv.name or inv.ref or inv.id),
-                        "account_id": acc_407.id, "credit": apply_amt, "partner_id": partner.id}),
-                ],
-            })
+            # Usar la fecha de la factura como fecha contable del asiento de reversión
+            advance_date = inv.invoice_date or inv.date or fields.Date.context_today(self)
+
+            if inv_curr == comp_curr:
+                # Factura en EUR: usar valores directamente
+                invoice_residual_ccy = inv.amount_residual
+                apply_amt_ccy = min(credit_available_ccy, invoice_residual_ccy)
+                if not apply_amt_ccy:
+                    continue
+
+                bridge = self.env["account.move"].create({
+                    "ref": _("Aplicación anticipo proveedor %s") % (inv.name or inv.ref or inv.id),
+                    "move_type": "entry",
+                    "journal_id": journal.id,
+                    "date": advance_date,
+                    "line_ids": [
+                        (0, 0, {
+                            "name": _("Aplicación anticipo a %s") % (inv.name or inv.ref or inv.id),
+                            "account_id": pay_line.account_id.id,
+                            "debit": apply_amt_ccy,
+                            "partner_id": partner.id,
+                        }),
+                        (0, 0, {
+                            "name": _("Aplicación anticipo a %s") % (inv.name or inv.ref or inv.id),
+                            "account_id": acc_407.id,
+                            "credit": apply_amt_ccy,
+                            "partner_id": partner.id,
+                        }),
+                    ],
+                })
+            else:
+                # Factura en moneda extranjera: usar valores ORIGINALES del anticipo
+                # sin reconvertir, para mantener el tipo de cambio del día del pago.
+
+                # Disponible en moneda extranjera
+                residuals_cur = adv_lines.mapped("amount_residual_currency")
+                if not any(residuals_cur):
+                    residuals_cur = adv_lines.mapped("amount_currency")
+                credit_available_cur = sum(residuals_cur)  # Para proveedores es positivo (débito)
+                if credit_available_cur <= 0:
+                    continue
+
+                invoice_residual_cur = pay_line.amount_residual_currency
+                if invoice_residual_cur >= 0:  # Para proveedores el residual es negativo
+                    continue
+
+                # Calcular cuánto aplicar en moneda extranjera
+                apply_amt_cur = min(credit_available_cur, -invoice_residual_cur)
+                if not apply_amt_cur:
+                    continue
+
+                # Calcular el EUR proporcional usando el tipo de cambio ORIGINAL del anticipo
+                if credit_available_cur:
+                    ratio = apply_amt_cur / credit_available_cur
+                else:
+                    ratio = 1.0
+                apply_amt_ccy = credit_available_ccy * ratio
+
+                bridge = self.env["account.move"].create({
+                    "ref": _("Aplicación anticipo proveedor %s") % (inv.name or inv.ref or inv.id),
+                    "move_type": "entry",
+                    "journal_id": journal.id,
+                    "date": advance_date,
+                    "currency_id": inv_curr.id,
+                    "line_ids": [
+                        (0, 0, {
+                            "name": _("Aplicación anticipo a %s") % (inv.name or inv.ref or inv.id),
+                            "account_id": pay_line.account_id.id,
+                            "debit": apply_amt_ccy,
+                            "amount_currency": apply_amt_cur,
+                            "currency_id": inv_curr.id,
+                            "partner_id": partner.id,
+                        }),
+                        (0, 0, {
+                            "name": _("Aplicación anticipo a %s") % (inv.name or inv.ref or inv.id),
+                            "account_id": acc_407.id,
+                            "credit": apply_amt_ccy,
+                            "amount_currency": -apply_amt_cur,
+                            "currency_id": inv_curr.id,
+                            "partner_id": partner.id,
+                        }),
+                    ],
+                })
+
             bridge.action_post()
 
             bridge_pay = bridge.line_ids.filtered(lambda l: l.account_id == pay_line.account_id and not l.reconciled)
@@ -477,6 +559,106 @@ class AccountMove(models.Model):
                 )
 
 
+
+    def _get_reconciled_info_JSON_values(self):
+        """
+        Override para mostrar los pagos originales del pedido en lugar de los asientos de reversión.
+        Cuando hay anticipos aplicados (asientos bridge 438→430 o 407→400), busca y devuelve
+        los pagos originales del pedido en lugar de los bridges.
+        """
+        # Llamar al método original
+        reconciled_vals = super()._get_reconciled_info_JSON_values()
+
+        # Solo procesar facturas de cliente y proveedor
+        if self.move_type not in ('out_invoice', 'in_invoice'):
+            return reconciled_vals
+
+        company = self.company_id
+        partner = self.commercial_partner_id
+
+        # Obtener cuentas de anticipo configuradas
+        if self.move_type == 'out_invoice':
+            acc_advance = company.account_advance_customer_id
+            sale_orders = self.mapped("line_ids.sale_line_ids.order_id")
+            if not sale_orders and self.invoice_origin:
+                sale_orders = self.env['sale.order'].search([('name', '=', self.invoice_origin)], limit=1)
+            source_orders = sale_orders
+        else:  # in_invoice
+            acc_advance = company.account_advance_supplier_id
+            source_orders = self.mapped("line_ids.purchase_line_id.order_id")
+
+        if not acc_advance or not source_orders:
+            return reconciled_vals
+
+        # Buscar asientos de reversión (bridges) en los reconciled_vals
+        bridge_move_ids = []
+        for val in reconciled_vals:
+            if val.get('ref') and 'Aplicación anticipo' in val.get('ref', ''):
+                # Este es probablemente un asiento de reversión
+                move_id = val.get('move_id')
+                if move_id:
+                    bridge_move_ids.append(move_id)
+
+        if not bridge_move_ids:
+            return reconciled_vals
+
+        # Buscar los pagos originales del pedido
+        original_payments = source_orders.mapped('account_payment_ids').filtered(
+            lambda p: p.state == 'posted'
+        )
+
+        if not original_payments:
+            return reconciled_vals
+
+        # Construir el mapeo de bridges → pagos originales
+        bridge_to_payment = {}
+        for bridge_id in bridge_move_ids:
+            bridge_move = self.env['account.move'].browse(bridge_id)
+
+            # Buscar líneas del bridge en cuenta de anticipo que estén reconciliadas
+            bridge_adv_lines = bridge_move.line_ids.filtered(
+                lambda l: l.account_id == acc_advance and l.reconciled
+            )
+
+            # Buscar qué pago original está reconciliado con este bridge
+            for adv_line in bridge_adv_lines:
+                for part_rec in adv_line.matched_debit_ids | adv_line.matched_credit_ids:
+                    # Obtener la línea contraria (del pago original)
+                    counterpart_line = part_rec.debit_move_id if part_rec.credit_move_id == adv_line else part_rec.credit_move_id
+
+                    # Verificar si esta línea pertenece a un pago original
+                    if counterpart_line.move_id in original_payments.mapped('move_id'):
+                        bridge_to_payment[bridge_id] = counterpart_line.move_id
+                        break
+                if bridge_id in bridge_to_payment:
+                    break
+
+        # Reemplazar los valores de los bridges con los de los pagos originales
+        new_reconciled_vals = []
+        for val in reconciled_vals:
+            move_id = val.get('move_id')
+            if move_id in bridge_to_payment:
+                # Reemplazar con el pago original
+                original_move = bridge_to_payment[move_id]
+                original_payment = original_payments.filtered(lambda p: p.move_id == original_move)
+
+                if original_payment:
+                    # Crear el diccionario con los datos del pago original
+                    new_val = {
+                        'name': original_payment.name,
+                        'move_id': original_move.id,
+                        'amount': val['amount'],  # Mantener el monto aplicado
+                        'date': original_move.date,
+                        'ref': original_move.ref or original_payment.name,
+                        'account_payment_id': original_payment.id,
+                    }
+                    new_reconciled_vals.append(new_val)
+                else:
+                    new_reconciled_vals.append(val)
+            else:
+                new_reconciled_vals.append(val)
+
+        return new_reconciled_vals
 
     def _get_advance_applied_amount(self):
         self.ensure_one()

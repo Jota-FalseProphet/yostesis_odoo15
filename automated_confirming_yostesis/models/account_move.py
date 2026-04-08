@@ -194,19 +194,18 @@ class AccountMove(models.Model):
                     if not pay_move:
                         continue
 
-                    # 4311 al DEBE => asiento de riesgo (remesa viva)
                     risk_line = pay_move.line_ids.filtered(
                         lambda l: l.account_id.id == risk_account.id and l.debit > 0.0
                     )
                     if not risk_line:
                         continue
 
-                    # Marcamos la línea como de riesgo de confirming
                     line_dict["is_confirming_risk"] = True
 
-                    # Ajustamos el texto del método de pago para que el usuario
-                    # vea claramente que es una remesa en proceso, no un cobro ya
-                    # realizado.
+                    remesa_date = pay_move.date
+                    remesa_label = format_date(self.env, remesa_date)
+                    line_dict["name"] = _("Remesado en %s") % remesa_label
+
                     base_label = _("Remesa en proceso de cobro")
                     pm_name = line_dict.get("payment_method_name")
                     if pm_name:
@@ -221,3 +220,58 @@ class AccountMove(models.Model):
             move.invoice_payments_widget = (
                 json.dumps(data) if original_is_str else data
             )
+
+    def _get_reconciled_info_JSON_values(self):
+        reconciled_vals = super()._get_reconciled_info_JSON_values()
+
+        if self.move_type not in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
+            return reconciled_vals
+
+        icp = self.env["ir.config_parameter"].sudo()
+        risk_param = icp.get_param("yostesis_confirming.confirming_risk_account_id")
+        risk_account = (
+            self.env["account.account"].browse(int(risk_param))
+            if risk_param
+            else self.env["account.account"].browse()
+        )
+
+        cancel_move = self.confirming_cancel_move_id
+
+        if risk_account:
+            for val in reconciled_vals:
+                move_id = val.get("move_id")
+                if not move_id:
+                    continue
+                pay_move = self.env["account.move"].browse(move_id)
+                if not pay_move:
+                    continue
+                risk_line = pay_move.line_ids.filtered(
+                    lambda l: l.account_id.id == risk_account.id and l.debit > 0.0
+                )
+                if risk_line:
+                    val["is_confirming_risk"] = True
+                    remesa_date = pay_move.date
+                    remesa_label = format_date(self.env, remesa_date)
+                    val["name"] = _("Remesado en %s") % remesa_label
+
+        if cancel_move:
+            if not any(v.get("move_id") == cancel_move.id for v in reconciled_vals):
+                maturity_date = self.invoice_date_due or cancel_move.date
+                maturity_str = fields.Date.to_string(maturity_date)
+
+                template = (reconciled_vals[0] if reconciled_vals else {}) or {}
+                new_val = dict(template)
+                for key in ("payment_id", "move_line_id", "group_id", "account_payment_id", "partial_id", "is_confirming_risk"):
+                    new_val.pop(key, None)
+
+                new_val.update({
+                    "move_id": cancel_move.id,
+                    "amount": abs(cancel_move.amount_total_signed or self.amount_total_signed),
+                    "date": maturity_str,
+                    "ref": cancel_move.ref or cancel_move.name,
+                    "journal_name": cancel_move.journal_id.display_name,
+                    "is_confirming": True,
+                })
+                reconciled_vals.append(new_val)
+
+        return reconciled_vals

@@ -1,0 +1,99 @@
+# French translation for automated_confirming_yostesis
+# Copyright (C) Yostesis
+# This file is distributed under the same license as the automated_confirming_yostesis package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 15.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-04 00:00+0000\n"
+"PO-Revision-Date: 2026-02-04 00:00+0000\n"
+"Last-Translator: Yostesis\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. module: automated_confirming_yostesis
+#: code:addons/automated_confirming_yostesis/models/account_move.py:0
+#, python-format
+msgid "Pagado al Vencimiento en %s"
+msgstr "Payé à l'échéance le %s"
+
+#. module: automated_confirming_yostesis
+#: code:addons/automated_confirming_yostesis/models/account_move.py:0
+#, python-format
+msgid "Remesa en proceso de cobro"
+msgstr "Remise en cours d'encaissement"
+
+#. module: automated_confirming_yostesis
+#: code:addons/automated_confirming_yostesis/models/account_move.py:0
+#, python-format
+msgid "Remesado en %s"
+msgstr "Remis le %s"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_payment_mode_id
+msgid "Modo de cobro Factoring"
+msgstr "Mode de paiement Affacturage"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_from_date
+msgid "Fecha de inicio para automatizar Factoring"
+msgstr "Date de début pour automatiser l'Affacturage"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_risk_account_id
+msgid "Cuenta de deuda Factoring (4311)"
+msgstr "Compte de dette Affacturage (4311)"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_debt_account_id
+msgid "Cuenta de riesgo Factoring (5208)"
+msgstr "Compte de risque Affacturage (5208)"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_journal_id
+msgid "Diario de cancelación"
+msgstr "Journal d'annulation"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_res_config_settings__confirming_enable_cron
+msgid "Activar cron de Factoring"
+msgstr "Activer le cron d'Affacturage"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,help:automated_confirming_yostesis.field_res_config_settings__confirming_from_date
+msgid "El cron sólo procesará facturas con fecha de vencimiento igual o posterior a esta."
+msgstr "Le cron ne traitera que les factures dont la date d'échéance est égale ou postérieure à cette date."
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,help:automated_confirming_yostesis.field_res_config_settings__confirming_enable_cron
+msgid "Si está activo, el cron procesará automáticamente las órdenes de cobro."
+msgstr "Si activé, le cron traitera automatiquement les ordres de paiement."
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_account_move__confirming_cancel_move_id
+msgid "Pago Confirming"
+msgstr "Paiement Confirming"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_account_move__is_confirming_cancel_move
+msgid "Asiento cancelación Confirming"
+msgstr "Écriture d'annulation Confirming"
+
+#. module: automated_confirming_yostesis
+#: model:ir.model.fields,field_description:automated_confirming_yostesis.field_account_move_line__yostesis_confirming_cancel_move_id
+msgid "Confirming Cancel Move"
+msgstr "Écriture d'annulation Confirming"
+
+#. module: automated_confirming_yostesis
+#: model_terms:ir.ui.view,arch_db:automated_confirming_yostesis.report_invoice_document_confirming_label
+msgid "Paid at Maturity on"
+msgstr "Payé à l'échéance le"
+
+#. module: automated_confirming_yostesis
+#: model_terms:ir.ui.view,arch_db:automated_confirming_yostesis.report_invoice_document_confirming_label
+msgid "Paid on"
+msgstr "Payé le"

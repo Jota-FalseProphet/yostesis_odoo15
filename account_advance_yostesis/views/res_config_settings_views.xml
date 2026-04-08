@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_yostesis_advances" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.yostesis.advances</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Debajo del bloque de Customer Invoices -->
+            <xpath expr="//div[@id='invoicing_settings']" position="after">
+
+                <h2>Anticipos</h2>
+                <div class="row mt16 o_settings_container" id="advances_settings">
+
+                    <!-- Caja 1: Cuenta anticipos clientes -->
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <label for="account_advance_customer_id"/>
+                            <div class="text-muted mb8">
+                                Cuenta donde se registran los anticipos de clientes.
+                                Normalmente una cuenta 438xxx.
+                            </div>
+                            <div class="mt8">
+                                <field name="account_advance_customer_id" class="w-100"
+                                       domain="[('company_id', '=', company_id), ('deprecated', '=', False)]"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Caja 2: Cuenta anticipos proveedores -->
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <label for="account_advance_supplier_id"/>
+                            <div class="text-muted mb8">
+                                Cuenta donde se registran los anticipos a proveedores.
+                                Normalmente una cuenta 407xxx.
+                            </div>
+                            <div class="mt8">
+                                <field name="account_advance_supplier_id" class="w-100"
+                                       domain="[('company_id', '=', company_id), ('reconcile', '=', True), ('deprecated', '=', False)]"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Caja 3: Diario de aplicación de anticipos -->
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <label for="advance_transfer_journal_id"/>
+                            <div class="text-muted mb8">
+                                Diario donde se crean los asientos de reversión (438→430 o 407→400)
+                                cuando se aplican anticipos a facturas.
+                            </div>
+                            <div class="mt8">
+                                <field name="advance_transfer_journal_id"
+                                       class="w-100"
+                                       domain="[('company_id', '=', company_id)]"
+                                       options="{'no_create': True, 'no_create_edit': True}"/>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

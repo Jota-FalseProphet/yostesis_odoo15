@@ -9,3 +9,4 @@ access_mrp_production_group_component_detail_user,mrp.production.group.component
 access_mrp_production_group_component_detail_manager,mrp.production.group.component.detail manager,model_mrp_production_group_component_detail,mrp.group_mrp_manager,1,1,1,1
 access_mrp_production_group_component_user,mrp.production.group.component user,model_mrp_production_group_component,mrp.group_mrp_user,1,0,0,0
 access_mrp_production_group_component_manager,mrp.production.group.component manager,model_mrp_production_group_component,mrp.group_mrp_manager,1,1,1,1
+access_mrp_production_to_group_wizard,mrp.production.to.group,model_mrp_production_to_group,mrp.group_mrp_manager,1,1,1,0

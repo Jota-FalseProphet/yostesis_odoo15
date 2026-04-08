@@ -75,6 +75,10 @@ class AccountMove(models.Model):
 
             # Anticipos proveedor (407) con cuenta de suspense configurada
             if has_advance_407 and suspense_account:
+                outstanding_accounts = (
+                    journal._get_journal_inbound_outstanding_payment_accounts()
+                    | journal._get_journal_outbound_outstanding_payment_accounts()
+                )
                 liquidity_lines = move.line_ids.filtered(
                     lambda l: (
                         l.account_internal_type not in ("receivable", "payable")
@@ -82,6 +86,7 @@ class AccountMove(models.Model):
                             l.account_id.code
                             and l.account_id.code.startswith("407")
                         )
+                        and l.account_id in outstanding_accounts
                     )
                 )
                 if liquidity_lines:

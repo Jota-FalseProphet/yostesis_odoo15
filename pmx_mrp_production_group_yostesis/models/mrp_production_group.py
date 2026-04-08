@@ -3,10 +3,8 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 
-
 class StockPicking(models.Model):
     _inherit = "stock.picking"
-
     production_group_id = fields.Many2one("mrp.production.group", index=True)
 
 
@@ -19,15 +17,12 @@ class MrpProductionGroup(models.Model):
     group_date = fields.Date(required=True, default=fields.Date.context_today)
     start_date = fields.Date()
     company_id = fields.Many2one("res.company", required=True, default=lambda self: self.env.company)
-
     production_ids = fields.One2many("mrp.production", "group_id", string="Órdenes de fabricación")
     production_count = fields.Integer(compute="_compute_production_count")
-
     picking_type_id = fields.Many2one("stock.picking.type", string="Tipo de operación")
     picking_id = fields.Many2one("stock.picking", string="Albarán de preparación", copy=False, readonly=True)
-    
     note = fields.Html(string="Notas")
-    
+
     picking_all_ids = fields.Many2many(
         "stock.picking",
         compute="_compute_picking_all",
@@ -53,14 +48,13 @@ class MrpProductionGroup(models.Model):
         string="Componentes",
         copy=False,
     )
-    
+
     picking_ids = fields.One2many(
         "stock.picking",
         "production_group_id",
         string="Albaranes relacionados",
         readonly=True,
     )
-    
     state = fields.Selection(
         [("draft", "Borrador"),
          ("picking_generated", "Albarán generado"),
@@ -71,7 +65,6 @@ class MrpProductionGroup(models.Model):
         store=True,
         readonly=True,
     )
-    
     production_m2m_ids = fields.Many2many(
         comodel_name="mrp.production",
         string="Órdenes de fabricación",
@@ -79,6 +72,57 @@ class MrpProductionGroup(models.Model):
         inverse="_inverse_production_m2m_ids",
         readonly=False,
     )
+    pmx_show_create_picking_button = fields.Boolean(
+        compute="_compute_pmx_show_create_picking_button",
+        string="Mostrar botón crear albarán",
+    )
+
+    @api.depends(
+        "state",
+        "component_ids.qty_total",
+        "picking_id",
+        "picking_id.move_ids_without_package.product_uom_qty",
+        "picking_id.move_ids_without_package.state",
+        "picking_ids",
+        "picking_ids.move_ids_without_package.product_uom_qty",
+        "picking_ids.move_ids_without_package.state",
+    )
+    def _compute_pmx_show_create_picking_button(self):
+        for group in self:
+            if group.state == "draft":
+                group.pmx_show_create_picking_button = True
+                continue
+
+            # Collect all related pickings, excluding cancelled ones
+            # (done pickings count: components are not removed when a picking is validated)
+            all_pickings = group.picking_ids
+            if group.picking_id:
+                all_pickings = all_pickings | group.picking_id
+            relevant_pickings = all_pickings.filtered(lambda p: p.state != "cancel")
+
+            # Sum demanded qty per product across relevant picking moves (non-cancelled moves)
+            picked_qty = defaultdict(float)
+            for picking in relevant_pickings:
+                for move in picking.move_ids_without_package.filtered(lambda m: m.state != "cancel"):
+                    if move.product_id:
+                        picked_qty[move.product_id.id] += move.product_uom_qty
+
+            # Show button if any component has more qty than what's covered by pickings
+            show = any(
+                comp.qty_total > picked_qty.get(comp.product_id.id, 0.0)
+                for comp in group.component_ids
+                if comp.product_id
+            )
+            group.pmx_show_create_picking_button = show
+
+    def _collect_backorder_chain(self, root_picking):
+        Picking = self.env['stock.picking'].sudo()
+        seen = Picking.browse()
+        to_process = root_picking
+        while to_process:
+            seen |= to_process
+            to_process = to_process.mapped('backorder_ids') - seen
+        return seen
 
     @api.depends("picking_id", "picking_ids", "picking_ids.backorder_ids")
     def _compute_picking_all(self):
@@ -87,15 +131,10 @@ class MrpProductionGroup(models.Model):
             pickings = Picking.browse()
 
             pickings |= Picking.search([("production_group_id", "=", group.id)])
-            pickings = group.picking_ids.sudo()
+            pickings |= group.picking_ids.sudo()
 
             if group.picking_id:
-                to_process = group.picking_id
-                seen = Picking.browse()
-                while to_process:
-                    seen |= to_process
-                    next_level = to_process.mapped("backorder_ids") - seen
-                    to_process = next_level
+                seen = group._collect_backorder_chain(group.picking_id)
                 pickings |= seen
 
             group.picking_all_ids = pickings
@@ -112,16 +151,11 @@ class MrpProductionGroup(models.Model):
         "picking_id.backorder_ids.state",
     )
     def _compute_state(self):
-        Picking = self.env["stock.picking"].sudo()
         for group in self:
             pickings = group.picking_ids.sudo()
 
             if group.picking_id:
-                to_process = group.picking_id.sudo()
-                seen = Picking.browse()
-                while to_process:
-                    seen |= to_process
-                    to_process = to_process.mapped("backorder_ids") - seen
+                seen = group._collect_backorder_chain(group.picking_id.sudo())
                 pickings |= seen
 
             if not pickings:
@@ -147,7 +181,6 @@ class MrpProductionGroup(models.Model):
         pickings = self.picking_all_ids
         if not pickings:
             raise UserError(_("No hay albaranes relacionados con esta agrupación."))
-
         return {
             "type": "ir.actions.act_window",
             "name": _("Albaranes"),
@@ -184,7 +217,7 @@ class MrpProductionGroup(models.Model):
     def _rebuild_aggregates_from_details(self):
         Agg = self.env["mrp.production.group.component"].sudo()
 
-        qty_field = "qty_total" if "qty_total" in Agg._fields else "qty"
+        qty_field = self._qty_field_agg()
 
         for group in self:
             group.component_ids.sudo().unlink()
@@ -194,9 +227,7 @@ class MrpProductionGroup(models.Model):
 
             totals = defaultdict(float)
 
-            lines = group.component_detail_ids.filtered(lambda l: l.product_id and l.product_uom_id and (l.qty or 0.0) > 0.0)
-            if "excluded" in lines._fields:
-                lines = lines.filtered(lambda l: not l.excluded)
+            lines = group._detail_lines_filtered()
 
             for l in lines:
                 loc_id = l.location_id.id if l.location_id else default_src_id
@@ -216,7 +247,6 @@ class MrpProductionGroup(models.Model):
             if vals_list:
                 Agg.create(vals_list)
 
-
     def action_open_picking(self):
         self.ensure_one()
         if not self.picking_id:
@@ -232,7 +262,6 @@ class MrpProductionGroup(models.Model):
 
     def _prefill_detailed_operations(self, picking):
         picking.ensure_one()
-
         if picking.move_line_ids.filtered(lambda ml: (ml.qty_done or 0.0) > 0.0):
             raise UserError(_("El albarán ya tiene cantidades hechas en operaciones detalladas (qty_done)."))
 
@@ -255,10 +284,7 @@ class MrpProductionGroup(models.Model):
                 "location_dest_id": move.location_dest_id.id,
             }
 
-            if move.product_id.tracking == "none":
-                vals["qty_done"] = qty
-            else:
-                vals["qty_done"] = 0.0
+            vals['qty_done'] = qty if move.product_id.tracking == 'none' else 0.0
 
             MoveLine.create(vals)
 
@@ -300,63 +326,69 @@ class MrpProductionGroup(models.Model):
         if origins:
             sos = SaleOrder.search([("name", "in", list(origins))])
             partners = {so.partner_id.id for so in sos if so.partner_id}
-            if len(partners) == 1:
-                partner_id = next(iter(partners))
-            else:
-                partner_id = self.company_id.partner_id.id if self.company_id.partner_id else False
+            partner_id = next(iter(partners)) if len(partners) == 1 else self.company_id.partner_id.id if self.company_id.partner_id else False
+
 
         if not partner_id:
             partner_id = self.company_id.partner_id.id if self.company_id.partner_id else False
-        if not partner_id:
-            raise UserError(_("No se ha podido determinar un contacto para el albarán. Revisa la compañía o el origen de las OF."))
+            if not partner_id:
+                raise UserError(_("No se ha podido determinar un contacto para el albarán. Revisa la compañía o el origen de las OF."))
 
-        picking = False
-        prev_state = False
-
+        # Validate and prepare the existing main picking if still active
         if self.picking_id and self.picking_id.state not in ("cancel", "done"):
-            picking = self.picking_id
-            prev_state = picking.state
-
-            if picking.company_id != self.company_id:
+            existing = self.picking_id
+            if existing.company_id != self.company_id:
                 raise UserError(_("El albarán asociado pertenece a otra compañía."))
-
-            if picking.picking_type_id != pt:
+            if existing.picking_type_id != pt:
                 raise UserError(_("El albarán asociado tiene un Tipo de operación distinto. Cancélalo y vuelve a generarlo."))
+            if existing.state == "assigned":
+                existing.action_unreserve()
 
-            if picking.move_line_ids.filtered(lambda ml: (ml.qty_done or 0.0) > 0.0):
-                raise UserError(_("El albarán tiene cantidades hechas (qty_done). No se puede sincronizar automáticamente."))
+        # Compute quantities already covered by non-cancelled pickings
+        covered = defaultdict(float)
+        all_existing = self.picking_ids
+        if self.picking_id:
+            all_existing = all_existing | self.picking_id
+        for p in all_existing.filtered(lambda p: p.state != "cancel"):
+            for m in p.move_ids_without_package.filtered(lambda m: m.state != "cancel"):
+                if m.product_id:
+                    covered[m.product_id.id] += m.product_uom_qty
 
-            if picking.state == "assigned":
-                picking.action_unreserve()
+        # Compute missing quantities: total needed minus what's already in pickings.
+        # Iterate in a stable order so coverage is applied consistently when a product
+        # appears in multiple (product, uom, location) combos.
+        covered_used = defaultdict(float)
+        missing = {}
+        for (product_id, uom_id, src_loc_id), qty in sorted(totals.items()):
+            available = max(0.0, covered[product_id] - covered_used[product_id])
+            if available >= qty:
+                covered_used[product_id] += qty
+            elif available > 0:
+                covered_used[product_id] += available
+                missing[(product_id, uom_id, src_loc_id)] = qty - available
+            else:
+                missing[(product_id, uom_id, src_loc_id)] = qty
 
-            picking.move_ids_without_package.filtered(lambda m: m.state not in ("done", "cancel")).unlink()
+        if not missing:
+            raise UserError(_("Todos los componentes ya están cubiertos por los albaranes existentes."))
 
-            picking.write({
-                "partner_id": partner_id,
-                "location_id": pt.default_location_src_id.id,
-                "location_dest_id": pt.default_location_dest_id.id,
-                "origin": self.name,
-                "production_group_id": self.id,
-                "note": self.note or False,
-            })
-        else:
-            picking_vals = {
-                "picking_type_id": pt.id,
-                "company_id": self.company_id.id,
-                "origin": self.name,
-                "production_group_id": self.id,
-                "partner_id": partner_id,
-                "location_id": pt.default_location_src_id.id,
-                "location_dest_id": pt.default_location_dest_id.id,
-                "note": self.note or False,
-
-            }
-            picking = self.env["stock.picking"].create(picking_vals)
+        # Always create a new picking with only the missing items.
+        # Existing pickings are never modified.
+        picking = self.env["stock.picking"].create({
+            "picking_type_id": pt.id,
+            "company_id": self.company_id.id,
+            "origin": self.name,
+            "production_group_id": self.id,
+            "partner_id": partner_id,
+            "location_id": pt.default_location_src_id.id,
+            "location_dest_id": pt.default_location_dest_id.id,
+            "note": self.note or False,
+        })
 
         Move = self.env["stock.move"].sudo()
         Product = self.env["product.product"].sudo()
 
-        for (product_id, uom_id, src_loc_id), qty in totals.items():
+        for (product_id, uom_id, src_loc_id), qty in missing.items():
             Move.create({
                 "name": Product.browse(product_id).display_name,
                 "picking_id": picking.id,
@@ -372,7 +404,9 @@ class MrpProductionGroup(models.Model):
             picking.action_confirm()
             self._prefill_detailed_operations(picking)
 
-        self.picking_id = picking.id
+        # Only promote to picking_id if there is no active main picking yet
+        if not self.picking_id or self.picking_id.state == "cancel":
+            self.picking_id = picking.id
 
         return {
             "type": "ir.actions.act_window",
@@ -388,12 +422,10 @@ class MrpProductionGroup(models.Model):
             picking = group.picking_id
             if not picking or picking.state in ("done", "cancel"):
                 continue
-
             if picking.move_line_ids.filtered(lambda ml: (ml.qty_done or 0.0) > 0.0):
                 continue
 
-            prev_state = picking.state
-            if prev_state == "assigned":
+            if picking.state == "assigned":
                 picking.action_unreserve()
 
             picking.move_ids_without_package.filtered(lambda m: m.state not in ("done", "cancel")).unlink()
@@ -401,7 +433,7 @@ class MrpProductionGroup(models.Model):
             pt = group.picking_type_id
             src_default = pt.default_location_src_id if pt and pt.default_location_src_id else picking.location_id
             dst_default = pt.default_location_dest_id if pt and pt.default_location_dest_id else picking.location_dest_id
-            picking.write({"note": group.note or False})            
+            picking.write({"note": group.note or False})
 
             totals = defaultdict(float)
             lines = group._detail_lines_filtered()
@@ -503,7 +535,6 @@ class MrpProductionGroup(models.Model):
                             ) % stp1.display_name)
                     vals["picking_type_id"] = stp3.id
 
-        # lo tuyo de la secuencia (esto lo tienes ya) :contentReference[oaicite:3]{index=3}
         if vals.get("name", _("New")) == _("New"):
             vals["name"] = self.env["ir.sequence"].next_by_code("mrp.production.group") or _("New")
 
@@ -519,13 +550,11 @@ class MrpProductionGroup(models.Model):
             for rec in self:
                 rec._rebuild_aggregates_from_details()
                 rec._sync_preparation_picking_from_details()
-        
         if "note" in vals:
             for rec in self:
                 pickings = (rec.picking_id | rec.picking_ids).filtered(lambda p: p.state not in ("done", "cancel"))
                 if pickings:
                     pickings.write({"note": rec.note or False})
-
         return res
 
     def _set_start_date_if_empty(self):
@@ -552,12 +581,10 @@ class MrpProductionGroup(models.Model):
             "context": ctx,
         }
 
-
     def _recompute_start_date(self):
         for rec in self:
             dates = [d for d in rec.production_ids.mapped("date_planned_start") if d]
             rec.start_date = min(dates).date() if dates else False
-
 
     def _detail_vals_from_mo(self, mo):
         self.ensure_one()
@@ -577,6 +604,7 @@ class MrpProductionGroup(models.Model):
             return abs(x - round(x)) <= tol
 
         moves = mo.move_raw_ids.filtered(lambda x: x.state != "cancel")
+        has_move_id = "move_id" in Detail._fields
         if moves:
             for mv in moves:
                 if not mv.product_id or not mv.product_uom:
@@ -597,7 +625,7 @@ class MrpProductionGroup(models.Model):
                     "location_id": loc_id or False,
                     "excluded": False,
                 }
-                if "move_id" in Detail._fields:
+                if has_move_id:
                     vals["move_id"] = mv.id
 
                 vals_list.append(vals)
@@ -630,7 +658,6 @@ class MrpProductionGroup(models.Model):
                 continue
             if not line.product_id or not line.product_uom_id:
                 continue
-
             qty = (line.product_qty or 0.0) * factor
             if qty <= 0:
                 continue
@@ -650,7 +677,7 @@ class MrpProductionGroup(models.Model):
                             "location_id": loc_id or False,
                             "excluded": False,
                         }
-                        if "move_id" in Detail._fields:
+                        if has_move_id:
                             vals["move_id"] = False
                         vals_list.append(vals)
             else:
@@ -663,10 +690,9 @@ class MrpProductionGroup(models.Model):
                     "location_id": loc_id or False,
                     "excluded": False,
                 }
-                if "move_id" in Detail._fields:
+                if has_move_id:
                     vals["move_id"] = False
                 vals_list.append(vals)
-
         return vals_list
 
     def _ensure_details_for_mos(self, mos):
@@ -693,7 +719,6 @@ class MrpProductionGroup(models.Model):
             group._recompute_start_date()
             group._after_detail_change()
 
-
     def _remove_details_for_mos(self, mos):
         Detail = self.env["mrp.production.group.component.detail"].sudo()
 
@@ -711,7 +736,6 @@ class MrpProductionGroup(models.Model):
             group._recompute_start_date()
             group._after_detail_change()
 
-    #helpers m2m para el agregarlinea
     @api.depends("production_ids")
     def _compute_production_m2m_ids(self):
         for group in self:
@@ -755,15 +779,15 @@ class MrpProductionGroup(models.Model):
                 group._recompute_start_date()
             elif hasattr(group, "_set_start_date_if_empty"):
                 group._set_start_date_if_empty()
-                
-    def _delete_related_pickings(self):
+
+    def _get_all_pickings(self):
         self.ensure_one()
         pickings = self.picking_all_ids.sudo()
         return pickings
-    
+
     def action_delete_group(self):
         for group in self:
-            pickings = group._delete_related_pickings()
+            pickings = group._get_all_pickings()
 
             done_pickings = pickings.filtered(lambda p: p.state == "done")
             if done_pickings:
@@ -793,10 +817,9 @@ class MrpProductionGroup(models.Model):
             "target": "current",
         }
 
-
     def unlink(self):
         for group in self:
-            pickings = group._delete_related_pickings()
+            pickings = group._get_all_pickings()
 
             done_pickings = pickings.filtered(lambda p: p.state == "done")
             if done_pickings:

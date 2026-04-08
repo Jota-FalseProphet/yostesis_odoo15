@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_users_form_purchase_collection" model="ir.ui.view">
+        <field name="name">res.users.form.purchase.collection</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="puntmobles_custom_permissions_yostesis.view_users_form_inherit_restrict_sale"/>
+        <field name="arch" type="xml">
+            <field name="allow_edit_commitment_confirmed" position="after">
+                <field name="allow_create_purchase_collection"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

@@ -12,6 +12,13 @@ logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
+    sii_auto_send = fields.Boolean(
+        string="Envío automático SII",
+        default=True,
+        copy=True,
+        help="Si está marcado, el cron enviará automáticamente esta factura al SII.",
+    )
+
     @api.model
     def check_for_sii(self):
 
@@ -52,6 +59,7 @@ class AccountMove(models.Model):
                 unsent_sii = [
                     ('state', '=', 'posted'),
                     ('sii_state', '=', 'not_sent'),
+                    ('sii_auto_send', '=', True),
                     ('company_id', '=', company.id),
                 ]
                 # If we should ignore invoices from after starting sii
