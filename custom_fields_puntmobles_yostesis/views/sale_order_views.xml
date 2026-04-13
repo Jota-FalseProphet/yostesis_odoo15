@@ -10,4 +10,76 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Retenido por transportista en tree de presupuestos -->
+    <record id="sale_quotation_tree_retenido_transportista" model="ir.ui.view">
+        <field name="name">sale.quotation.tree.retenido.transportista</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <field name="state" position="after">
+                <field name="retenido_transportista" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Ocultar por defecto amount_multicompany_reporting_currency - Pedidos -->
+    <record id="sale_order_tree_hide_multicompany" model="ir.ui.view">
+        <field name="name">sale.order.tree.hide.multicompany</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <field name="amount_multicompany_reporting_currency" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </field>
+        </field>
+    </record>
+
+    <!-- Ocultar por defecto amount_multicompany_reporting_currency - Presupuestos -->
+    <record id="sale_quotation_tree_hide_multicompany" model="ir.ui.view">
+        <field name="name">sale.quotation.tree.hide.multicompany</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <field name="amount_multicompany_reporting_currency" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </field>
+        </field>
+    </record>
+
+    <!-- Base imponible en moneda reporting - Pedidos confirmados -->
+    <record id="sale_order_tree_untaxed_reporting" model="ir.ui.view">
+        <field name="name">sale.order.tree.untaxed.reporting</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <field name="amount_total" position="after">
+                <field
+                    name="amount_untaxed_reporting_currency"
+                    sum="Total"
+                    widget="monetary"
+                    options="{'currency_field': 'multicompany_reporting_currency_id'}"
+                    optional="show"
+                />
+            </field>
+        </field>
+    </record>
+
+    <!-- Base imponible en moneda reporting - Presupuestos -->
+    <record id="sale_quotation_tree_untaxed_reporting" model="ir.ui.view">
+        <field name="name">sale.quotation.tree.untaxed.reporting</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <field name="amount_total" position="after">
+                <field
+                    name="amount_untaxed_reporting_currency"
+                    sum="Total"
+                    widget="monetary"
+                    options="{'currency_field': 'multicompany_reporting_currency_id'}"
+                    optional="show"
+                />
+            </field>
+        </field>
+    </record>
 </odoo>

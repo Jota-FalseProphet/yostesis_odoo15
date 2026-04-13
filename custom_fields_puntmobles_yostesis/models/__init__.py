@@ -7,6 +7,7 @@ from . import sale_order
 from . import crm_claim
 from . import sale_order_project
 from . import product_product
+from . import account_move
 from . import account_move_line
 from . import res_company
 from . import account_payment_order

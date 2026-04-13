@@ -1,0 +1,20 @@
+<odoo>
+    <!-- Base imponible en moneda reporting - Facturas -->
+    <record id="account_invoice_tree_untaxed_reporting" model="ir.ui.view">
+        <field name="name">account.invoice.tree.untaxed.reporting</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <field name="amount_total_signed" position="after">
+                <field name="multicompany_reporting_currency_id" invisible="1"/>
+                <field
+                    name="amount_untaxed_reporting_currency"
+                    sum="Total"
+                    widget="monetary"
+                    options="{'currency_field': 'multicompany_reporting_currency_id'}"
+                    optional="show"
+                />
+            </field>
+        </field>
+    </record>
+</odoo>

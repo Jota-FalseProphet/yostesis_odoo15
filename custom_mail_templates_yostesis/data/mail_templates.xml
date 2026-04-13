@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- Yostesis - Pedido a confirmar 48h -->
+        <record id="mail_template_yostesis_pedido_48h" model="mail.template">
+            <field name="name">Yostesis - Pedido a confirmar 48h</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="subject">Punt Mobles - Confirmación de pedido {{ object.name }}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+<div style="margin:0px;padding:0px;font-size:13px;">
+    <p>Apreciado <t t-out="object.partner_id.name or ''"/>,</p>
+    <p>Muchas gracias por tu pedido referencia <t t-out="object.name or ''"/>. Te mandamos la confirmación de pedido.</p>
+    <p>Te pedimos que la revises con atención. Los cambios y/o cancelaciones se deben dar en 2 días laborables respondiendo a este email.</p>
+    <p><strong>Si no recibimos ninguna modificación por tu parte en estas 48 h, daremos la confirmación por aceptada y procedemos a su producción.</strong></p>
+    <p>Cancelaciones o modificaciones posteriores que se hicieran después deben ser aceptadas por Punt y pueden tener un cargo extra y un plazo más largo.</p>
+    <p>Esperamos tener el pedido listo para ser recogido por el transportista a finales de la semana XXX.</p>
+    <p>Atentamente,</p>
+    <div t-if="user.signature">
+        <t t-out="user.signature"/>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- Yostesis - Pedido a confirmar a la recepción del pago -->
+        <record id="mail_template_yostesis_pedido_pago" model="mail.template">
+            <field name="name">Yostesis - Pedido a confirmar a la recepción del pago</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="subject">Punt Mobles - Confirmación de pedido {{ object.name }}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+<div style="margin:0px;padding:0px;font-size:13px;">
+    <p>Apreciado <t t-out="object.partner_id.name or ''"/>,</p>
+    <p>Muchas gracias por tu pedido referencia <t t-out="object.name or ''"/>. Te mandamos la confirmación de pedido.</p>
+    <p>Te pedimos que la revises con atención.</p>
+    <p>Para comenzar la producción necesitamos el pago del XXXX a la confirmación. Dispones de nuestros datos bancarios en la confirmación. Nos puedes mandar el justificante a este mismo mail.</p>
+    <p>Cancelaciones o modificaciones posteriores que se hicieran después deben ser aceptadas por Punt y pueden tener un cargo extra y un plazo más largo.</p>
+    <p>Esperamos tener el pedido listo para ser recogido por el transportista a finales de la semana XXX siempre que hayamos recibido el pago en 48 horas</p>
+    <p>Atentamente,</p>
+    <div t-if="user.signature">
+        <t t-out="user.signature"/>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- Yostesis - Pedido informal -->
+        <record id="mail_template_yostesis_pedido_informal" model="mail.template">
+            <field name="name">Yostesis - Pedido informal</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="subject">Punt Mobles - Proforma pedido {{ object.name }}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+<div style="margin:0px;padding:0px;font-size:13px;">
+    <p>Apreciado <t t-out="object.partner_id.name or ''"/>,</p>
+    <p>Muchas gracias por tu pedido.</p>
+    <p>Adjunto te mandamos la proforma para revisar los detalles y poder confirmar el pedido.</p>
+    <p>Sólo pondremos el pedido en producción una vez haya sido confirmado expresamente por vuestra compañía.</p>
+    <p>El retraso en esta confirmación supondrá un retraso en la fecha de producción prevista.</p>
+    <p>La dirección de entrega será la que aparece en este documento. Por favor confírmanos URGENTE si hay algún dato incorrecto.</p>
+    <p>Normalmente trabajamos con transporte especializado. Tienen servicios de entrega semanales y trabajan con tiempos de entrega estimados.</p>
+    <p>No nos es por tanto posible confirmar la entrega para un día concreto. Si necesitas entrega confirmada para un día concreto, podríamos buscar un servicio alternativo con un presupuesto que debería ser aceptado.</p>
+    <p>Saludos</p>
+    <div t-if="user.signature">
+        <t t-out="user.signature"/>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- Yostesis - Pedido especial -->
+        <record id="mail_template_yostesis_pedido_especial" model="mail.template">
+            <field name="name">Yostesis - Pedido especial</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="subject">Punt Mobles - Pedido especial {{ object.name }}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+<div style="margin:0px;padding:0px;font-size:13px;">
+    <p>Apreciado <t t-out="object.partner_id.name or ''"/>,</p>
+    <p>Muchas gracias por tu pedido.</p>
+    <p>Adjunto te mandamos la proforma para revisar los detalles y poder confirmar el pedido.</p>
+    <p>Sólo pondremos el pedido en producción una vez haya sido confirmado expresamente por vuestra compañía. El retraso en esta confirmación supondrá un retraso en la fecha de producción prevista.</p>
+    <p>La dirección de entrega será la que aparece en este documento. Por favor confírmanos URGENTE si hay algún dato incorrecto.</p>
+    <p>Tratándose de un producto especial, aplicamos los siguientes requisitos:</p>
+    <ul>
+    <li>Pago del 50% de la confirmación en el momento de la confirmación. Resto según condiciones habituales</li>
+    <li>Adjuntamos dibujo técnico para ser devuelto firmado</li>
+    </ul>
+    <p>Una vez recibamos el pago y el dibujo, comenzará a contar el plazo de producción, que es de 8 semanas laborables (agosto y Navidad inhábil)</p>
+    <p>Los pedidos especiales no se pueden anular ni cambiar sin aprobación previa de Punt. Cualquier cambio o anulación puede implicar la pérdida del importe pagado como adelanto.</p>
+    <p>No dejes de contactar con nosotros si necesitas más información</p>
+    <p>Atentamente</p>
+    <div t-if="user.signature">
+        <t t-out="user.signature"/>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- Yostesis - Comenzamos producción -->
+        <record id="mail_template_yostesis_comenzamos_produccion" model="mail.template">
+            <field name="name">Yostesis - Comenzamos producción</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="subject">Punt Mobles - Inicio de producción pedido {{ object.name }}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+<div style="margin:0px;padding:0px;font-size:13px;">
+    <p>Apreciado <t t-out="object.partner_id.name or ''"/>,</p>
+    <p>Después de pasadas 48 desde el envío de la confirmación del pedido y dado que no hemos recibido ninguna modificación por vuestra parte, informamos que el pedido comienza su producción tal y como venía indicado en la confirmación enviada.</p>
+    <p>Atentamente</p>
+    <div t-if="user.signature">
+        <t t-out="user.signature"/>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- Yostesis - Aviso de retraso -->
+        <record id="mail_template_yostesis_aviso_retraso" model="mail.template">
+            <field name="name">Yostesis - Aviso de retraso</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="subject">Punt Mobles - Aviso de retraso pedido {{ object.name }}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+<div style="margin:0px;padding:0px;font-size:13px;">
+    <p>Apreciado <t t-out="object.partner_id.name or ''"/>,</p>
+    <p>Lamentamos informar que tu pedido <t t-out="object.name or ''"/> no estará listo en la fecha prevista inicialmente. Esperamos poderlo tener listo a finales de la semana <t t-out="object.name or ''"/></p>
+    <p>Sentimos los inconvenientes que este cambio pueda ocasionar</p>
+    <p>Por favor, no dudes en contactar con nosotros si necesitas más información</p>
+    <p>Un saludo</p>
+    <div t-if="user.signature">
+        <t t-out="user.signature"/>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- Yostesis - Pedido listo próxima semana y solicitud de pago -->
+        <record id="mail_template_yostesis_listo_solicitud_pago" model="mail.template">
+            <field name="name">Yostesis - Pedido listo próxima semana y solicitud de pago</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="subject">Punt Mobles - Pedido {{ object.name }} listo y solicitud de pago</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+<div style="margin:0px;padding:0px;font-size:13px;">
+    <p>Apreciado <t t-out="object.partner_id.name or ''"/>,</p>
+    <p>Estamos encantados de poder informar que tu pedido <t t-out="object.name or ''"/> estará listo en la próxima semana.</p>
+    <p>Puesto que la forma de pago es por anticipado, te pedimos que nos mandes el justificante de pago de esta proforma a la mayor brevedad.</p>
+    <p>Nos puedes mandar el justificante a este mismo email para que podamos organizar la salida lo más rápido posible.</p>
+    <p>No dudes en contactar con nosotros si necesitas más información</p>
+    <p>Un saludo</p>
+    <div t-if="user.signature">
+        <t t-out="user.signature"/>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- Yostesis - Pedido listo y envío de factura -->
+        <record id="mail_template_yostesis_listo_factura" model="mail.template">
+            <field name="name">Yostesis - Pedido listo y envío de factura</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="subject">Punt Mobles - Pedido {{ object.name }} enviado y factura</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+<div style="margin:0px;padding:0px;font-size:13px;">
+    <p>Estimado cliente,</p>
+    <p>Nos complace informarle que su pedido ha sido enviado a la empresa de transporte.</p>
+    <p>Adjunto encontrará la factura en PDF.</p>
+    <p>No se le enviará la versión original a menos que usted lo solicite específicamente.</p>
+    <p>Le rogamos que revise cuidadosamente las cajas al recibir este pedido y reconozca cualquier imperfección o daño y/o cualquier paquete faltante en el albarán de entrega.</p>
+    <p>Por favor, tome fotografías si es posible y compártalas con nosotros junto con una explicación detallada antes de 48 h.</p>
+    <p>Esta es la única manera de garantizar una solución para usted y su cliente.</p>
+    <p>No dude en ponerse en contacto con nosotros para obtener cualquier información adicional.</p>
+    <p>Atentamente,</p>
+    <div t-if="user.signature">
+        <t t-out="user.signature"/>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- Yostesis - Pedido EXW listo - información para recogida -->
+        <record id="mail_template_yostesis_exw_recogida" model="mail.template">
+            <field name="name">Yostesis - Pedido EXW listo - información para recogida</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="subject">Punt Mobles - Pedido {{ object.name }} listo para recogida (EXW)</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+<div style="margin:0px;padding:0px;font-size:13px;">
+    <p>Buenos días,</p>
+    <p>La mercancía está lista para su recogida, adjunto packing list y la información tanto de número de pedido, como horario de recogida.</p>
+    <p>Os pedimos que organicéis la recogida a la mayor brevedad.</p>
+    <p>Por favor, contactad con: jorge.navarro@puntmobles.com, para tener listo tanto el pedido como su documentación.</p>
+    <p><strong>Dirección de recogida:</strong></p>
+    <p>ALMACÉN PUNT MOBLES</p>
+    <p>c/Islas Baleares 48 . P.I. Fuente del Jarro</p>
+    <p>46988 PATERNA (VALENCIA)</p>
+    <p>Lunes a Jueves: 8h -10h &amp; 10.30h - 13.30h</p>
+    <p>Viernes: 8h - 10h &amp; 10.30h - 13h</p>
+    <p>Al venir a recoger: EL CONDUCTOR DEBE TRAER EL NÚMERO DE REFERENCIA DEL PEDIDO:  <t t-out="object.name or ''"/>. Sin ese número, no se le entregará la mercancía.</p>
+    <p><strong>Otras</strong></p>
+    <ul>
+    <li>HS CODE Furniture: 94036010</li>
+    <li>HS CODE Lamps: 81940520</li>
+    <li>HS CODE Rug: 570300</li>
+    <li>HS CODE Marketing: 49111010</li>
+    </ul>
+    <p>Atentamente</p>
+    <div t-if="user.signature">
+        <t t-out="user.signature"/>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- Yostesis - Reclamación de factura vencida -->
+        <record id="mail_template_yostesis_reclamacion_factura" model="mail.template">
+            <field name="name">Yostesis - Reclamación de factura vencida</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="subject">Punt Mobles - Reclamación de factura vencida</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+<div style="margin:0px;padding:0px;font-size:13px;">
+    <p>Apreciado cliente:</p>
+    <p>Nuestro departamento de administración nos ha informado que las siguientes facturas están vencidas.</p>
+    <p>Os pedimos que procedáis al pago a la mayor brevedad.</p>
+    <p>No dejes de contactar con nosotros si necesitas más información</p>
+    <p>Atentamente</p>
+    <div t-if="user.signature">
+        <t t-out="user.signature"/>
+    </div>
+</div>
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -7,7 +7,7 @@ class StockPicking(models.Model):
     # <xpath expr="//field[@name='carrier_id']" position="after">
     #             <field name="retenido_transportista"/>
     #         </xpath>
-    retenido_transportista = fields.Boolean(string="Retenido por transportista")
+    retenido_transportista = fields.Boolean(string="Retenido por transportista", tracking=True)
 
     # dummy field para que el usuario referencie el albarán de proveedor
     # <xpath expr="//sheet//field[@name='owner_id']" position="after">

@@ -13,8 +13,8 @@ class SaleOrderProject(models.Model):
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
     # En ir.model.acces.csv se da acceso al modelo sale.order.project en la línea 2 
-    project_id = fields.Many2one(
-        'sale.order.project', 
+    sale_project_ref_id = fields.Many2one(
+        'sale.order.project',
         string = 'Nombre/Ref del proyecto'
     )
     

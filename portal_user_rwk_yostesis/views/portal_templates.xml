@@ -15,4 +15,24 @@
         </xpath>
     </template>
 
+    <template id="portal_my_purchase_order_label_button" inherit_id="purchase.purchase_order_portal_content">
+        <!-- Header column -->
+        <xpath expr="//table[@id='purchase_order_table']/thead/tr" position="inside">
+            <th class="text-center">Etiqueta</th>
+        </xpath>
+        <!-- Cell per product line -->
+        <xpath expr="//table[@id='purchase_order_table']/tbody/t/tr/t[@t-if='not line.display_type']" position="inside">
+            <td class="text-center">
+                <a t-if="line.product_id"
+                   t-attf-href="/my/purchase/#{order.id}/product_label/#{line.product_id.id}?access_token=#{order.access_token}"
+                   target="_blank"
+                   class="btn btn-sm btn-primary"
+                   title="Imprimir etiqueta">
+                    <i class="fa fa-print"/>
+                </a>
+            </td>
+        </xpath>
+        <!-- Pad section/note rows so colspan keeps the table aligned (already use colspan=99, OK) -->
+    </template>
+
 </odoo>

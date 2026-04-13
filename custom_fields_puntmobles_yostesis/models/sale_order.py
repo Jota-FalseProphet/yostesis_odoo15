@@ -2,12 +2,57 @@ import json
 from lxml import etree
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+from odoo.tools import float_is_zero
 
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
     date_order = fields.Datetime(tracking=True)
+
+    amount_untaxed_reporting_currency = fields.Monetary(
+        string='Base imponible (Divisa de Referencia de varias compañías)',
+        currency_field='multicompany_reporting_currency_id',
+        compute='_compute_amount_untaxed_reporting_currency',
+        store=True,
+        readonly=True,
+    )
+
+    @api.depends(
+        'amount_untaxed',
+        'multicompany_reporting_currency_id',
+        'multicompany_reporting_currency_rate',
+    )
+    def _compute_amount_untaxed_reporting_currency(self):
+        for rec in self:
+            if (
+                rec.currency_id == rec.multicompany_reporting_currency_id
+            ) or float_is_zero(
+                rec.multicompany_reporting_currency_rate,
+                precision_rounding=(
+                    rec.currency_id or self.env.company.currency_id
+                ).rounding,
+            ):
+                rec.amount_untaxed_reporting_currency = rec.amount_untaxed
+            else:
+                rec.amount_untaxed_reporting_currency = (
+                    rec.amount_untaxed * rec.multicompany_reporting_currency_rate
+                )
+
+    retenido_transportista = fields.Boolean(
+        string='Retenido por transportista',
+        compute='_compute_retenido_transportista',
+        store=True,
+    )
+
+    @api.depends('picking_ids.retenido_transportista')
+    def _compute_retenido_transportista(self):
+        for rec in self:
+            rec.retenido_transportista = any(
+                p.retenido_transportista
+                for p in rec.picking_ids
+                if p.picking_type_code == 'outgoing'
+            )
 
     fecha_entrega_prevista = fields.Datetime(
         string='Fecha entrega prevista',
@@ -51,17 +96,27 @@ class SaleOrder(models.Model):
                         'la fecha de entrega en pedidos confirmados.'
                     ))
 
-        if 'fecha_entrega_prevista' in vals:
+        # Sincronizar commitment_date → fecha_entrega_prevista ANTES de validar
+        if 'commitment_date' in vals and 'fecha_entrega_prevista' not in vals:
+            vals['fecha_entrega_prevista'] = vals['commitment_date']
+
+        # Solo exigir motivo cuando se cambia fecha_entrega_prevista
+        # de forma independiente (no como sync de commitment_date)
+        fecha_changed_manually = (
+            'fecha_entrega_prevista' in vals and 'commitment_date' not in vals
+        )
+        if fecha_changed_manually:
             new_val = vals['fecha_entrega_prevista']
-            motivo_key = vals.get('motivo_cambio_fecha_prevista')
             for rec in self:
                 old_val = rec.fecha_entrega_prevista
                 if not old_val and not new_val:
                     continue
                 if rec.state in ('draft', 'sent'):
                     continue
-                if not motivo_key:
-                    motivo_key = rec.motivo_cambio_fecha_prevista
+                motivo_key = (
+                    vals.get('motivo_cambio_fecha_prevista')
+                    or rec.motivo_cambio_fecha_prevista
+                )
                 if not motivo_key:
                     raise UserError(_(
                         'Debe indicar un motivo para cambiar la fecha de entrega prevista.'
@@ -70,7 +125,9 @@ class SaleOrder(models.Model):
                     self._fields['motivo_cambio_fecha_prevista'].selection
                 ).get(motivo_key, motivo_key)
                 old_str = fields.Datetime.to_string(old_val) if old_val else _('(vacío)')
-                new_str = new_val or _('(vacío)')
+                new_str = new_val if isinstance(new_val, str) else (
+                    fields.Datetime.to_string(new_val) if new_val else _('(vacío)')
+                )
                 rec.message_post(
                     body=_(
                         '<strong>Fecha entrega prevista modificada</strong><br/>'
@@ -80,25 +137,6 @@ class SaleOrder(models.Model):
                     message_type='comment',
                     subtype_xmlid='mail.mt_note',
                 )
-            vals['motivo_cambio_fecha_prevista'] = False
-
-        elif 'motivo_cambio_fecha_prevista' in vals and vals['motivo_cambio_fecha_prevista']:
-            motivo_key = vals['motivo_cambio_fecha_prevista']
-            motivo_label = dict(
-                self._fields['motivo_cambio_fecha_prevista'].selection
-            ).get(motivo_key, motivo_key)
-            for rec in self:
-                rec.message_post(
-                    body=_(
-                        '<strong>Motivo cambio fecha actualizado</strong><br/>'
-                        '<strong>Motivo:</strong> %s'
-                    ) % motivo_label,
-                    message_type='comment',
-                    subtype_xmlid='mail.mt_note',
-                )
-
-        if 'commitment_date' in vals and 'fecha_entrega_prevista' not in vals:
-            vals['fecha_entrega_prevista'] = vals['commitment_date']
 
         return super().write(vals)
 

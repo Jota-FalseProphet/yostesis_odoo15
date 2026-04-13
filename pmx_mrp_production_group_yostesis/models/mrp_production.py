@@ -32,7 +32,7 @@ class MrpProduction(models.Model):
     )
     sale_order_origin_id = fields.Many2one(
         comodel_name="sale.order",
-        string="Origen",
+        string="Pedido de venta",
         compute="_compute_sale_order_origin_id",
         readonly=True
     )

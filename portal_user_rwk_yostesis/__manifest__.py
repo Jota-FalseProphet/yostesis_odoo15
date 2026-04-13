@@ -1,6 +1,6 @@
 {
     'name': 'Portal Purchase Receipt Date',
-    'version': '15.0.1.0.1',
+    'version': '15.0.1.0.2',
     'category': 'Purchase',
     'summary': 'Shows the Receipt Date field in portal purchase order list',
     'description': '''
