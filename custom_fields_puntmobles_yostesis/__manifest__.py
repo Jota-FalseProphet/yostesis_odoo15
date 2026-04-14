@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Custom Fields for Puntmobles by Yostesis",
-    "version": "15.0.1.8.9",
+    "version": "15.0.1.9.0",
     "summary": "A bunch for custom fields needed by PuntMobles",
     "description": """
         This is a collection of custom fields required by PuntMobles for their Odoo implementation.
@@ -39,6 +39,7 @@
         "report/report_mrp_obs.xml",
         "report/report_picking_multiples.xml",
         "report/report_picking_multiples_action.xml",
+        "report/report_deliveryslip_note.xml",
     ],
     
     #Este modulo es una guarrada, lo siento Ignacio

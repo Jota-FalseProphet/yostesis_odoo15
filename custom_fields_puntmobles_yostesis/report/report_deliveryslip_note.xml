@@ -1,0 +1,19 @@
+<odoo>
+    <template id="report_delivery_document_note" inherit_id="stock.report_delivery_document">
+        <!-- Origen (pedido de compra) para devoluciones -->
+        <xpath expr="//div[@name='div_origin']" position="after">
+            <div t-if="o.return_purchase_order_id" class="col-auto" name="div_return_origin">
+                <strong>Origen:</strong>
+                <p t-field="o.return_purchase_order_id.name"/>
+            </div>
+        </xpath>
+
+        <!-- Nota del albarán -->
+        <xpath expr="//div[@name='signature']" position="before">
+            <div t-if="o.note" class="mt32">
+                <strong>Notas:</strong>
+                <div t-field="o.note"/>
+            </div>
+        </xpath>
+    </template>
+</odoo>
