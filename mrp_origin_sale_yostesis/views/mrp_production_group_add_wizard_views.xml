@@ -7,15 +7,19 @@
         <field name="inherit_id" ref="pmx_mrp_production_group_yostesis.view_mrp_production_group_add_wizard_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='planned_start_to']" position="after">
-                <field name="commitment_date_from"/>
-                <field name="commitment_date_to"/>
+                <field name="origin_date_expected_from"/>
+                <field name="origin_date_expected_to"/>
+                <field name="commitment_date_from" invisible="1"/>
+                <field name="commitment_date_to" invisible="1"/>
             </xpath>
             <xpath expr="//field[@name='sale_order_ids']" position="after">
+                <field name="display_origin_search" string="Origen Absoluto" placeholder="PV05, PC-00012, OF-29897..."/>
                 <field name="origin_product_ids" widget="many2many_tags" options="{'no_create_edit': True}" invisible="1"/>
                 <field name="coleccion_search" string="Colección"/>
             </xpath>
             <xpath expr="//field[@name='date_planned_start']" position="after">
-                <field name="sale_commitment_date" readonly="1" widget="date"/>
+                <field name="origin_date_expected" readonly="1" widget="date"/>
+                <field name="display_origin_name" readonly="1" string="Origen Absoluto"/>
                 <field name="origin_product_id" readonly="1"/>
             </xpath>
         </field>

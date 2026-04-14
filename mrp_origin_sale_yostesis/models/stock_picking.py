@@ -12,7 +12,22 @@ class StockPicking(models.Model):
         self._recompute_mos_origin_sale()
         return result
 
-    def _recompute_mos_origin_sale(self):
+    def _subcontracted_produce(self, subcontract_details):
+        """After subcontract MOs are produced/linked, the full move graph
+        from upstream component MOs (e.g. PUL polishing OFs) down to the
+        SO line exists. Recompute origin on every connected MO so they
+        get the correct sale_line_id from the move graph (otherwise the
+        compute may have run earlier with an incomplete chain and fallen
+        back to name-matching, picking the wrong SO line when the SO has
+        several similar variants)."""
+        result = super()._subcontracted_produce(subcontract_details)
+        try:
+            self._recompute_mos_origin_sale(force=True)
+        except Exception:
+            _logger.exception('Error recomputing origin after _subcontracted_produce')
+        return result
+
+    def _recompute_mos_origin_sale(self, force=False):
         """After receipt validation, recompute origin_sale for connected MOs.
 
         At this point _subcontracted_produce() has already run, so the full
@@ -61,9 +76,12 @@ class StockPicking(models.Model):
                     extra_mos |= dest.raw_material_production_id
         all_mos |= extra_mos
 
-        empty = all_mos.filtered(
-            lambda m: m.state != 'cancel' and not m.origin_sale and not m.origin_purchase_id
-        )
+        if force:
+            empty = all_mos.filtered(lambda m: m.state != 'cancel')
+        else:
+            empty = all_mos.filtered(
+                lambda m: m.state != 'cancel' and not m.origin_sale and not m.origin_purchase_id
+            )
         if empty:
             _logger.info(
                 'Recomputing origin for %d MOs after receipt: %s',
@@ -74,5 +92,5 @@ class StockPicking(models.Model):
             empty.flush([
                 'origin_sale', 'origin_product_id', 'origin_production_id',
                 'sale_line_id', 'origin_purchase_id', 'origin_purchase_line_id',
-                'display_origin',
+                'display_origin', 'display_origin_name',
             ])

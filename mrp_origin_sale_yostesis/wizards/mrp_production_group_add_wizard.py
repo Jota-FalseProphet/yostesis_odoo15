@@ -14,12 +14,24 @@ class MrpProductionGroupAddWizard(models.TransientModel):
         string="Fecha ent prev PV hasta"
     )
 
+    origin_date_expected_from = fields.Date(
+        string="Fecha ent prev desde"
+    )
+    origin_date_expected_to = fields.Date(
+        string="Fecha ent prev hasta"
+    )
+
     origin_product_ids = fields.Many2many(
         comodel_name="product.product",
         relation="mpg_wiz_origin_product_rel",
         column1="wizard_id",
         column2="product_id",
         string="Producto Padre",
+    )
+
+    display_origin_search = fields.Char(
+        string="Origen Absoluto",
+        help="Busca por origen absoluto (PV, PC, OF). Varios tokens separados por espacios/comas (OR).",
     )
 
     coleccion_search = fields.Char(
@@ -30,11 +42,26 @@ class MrpProductionGroupAddWizard(models.TransientModel):
     def _base_domain(self):
         dom = super()._base_domain()
 
+        if self.display_origin_search:
+            raw = self.display_origin_search.strip()
+            tokens = [t for t in re.split(r"[,\s;]+", raw) if t]
+            if tokens:
+                terms = []
+                for t in tokens:
+                    terms.append(("display_origin_name", "ilike", t))
+                dom += self._or_domain_terms(terms)
+
         if self.commitment_date_from:
             dom.append(("sale_commitment_date", ">=", fields.Datetime.to_datetime(self.commitment_date_from)))
         if self.commitment_date_to:
             dt_to = fields.Datetime.to_datetime(self.commitment_date_to) + relativedelta(days=1)
             dom.append(("sale_commitment_date", "<", dt_to))
+
+        if self.origin_date_expected_from:
+            dom.append(("origin_date_expected", ">=", fields.Datetime.to_datetime(self.origin_date_expected_from)))
+        if self.origin_date_expected_to:
+            dt_to = fields.Datetime.to_datetime(self.origin_date_expected_to) + relativedelta(days=1)
+            dom.append(("origin_date_expected", "<", dt_to))
 
         if self.origin_product_ids:
             dom.append(("origin_product_id", "in", self.origin_product_ids.ids))
@@ -67,7 +94,7 @@ class MrpProductionGroupAddWizard(models.TransientModel):
                 paths.append("origin_product_id.product_tmpl_id.code_prefix")
         return paths
 
-    @api.onchange("commitment_date_from", "commitment_date_to", "origin_product_ids", "coleccion_search")
+    @api.onchange("commitment_date_from", "commitment_date_to", "origin_date_expected_from", "origin_date_expected_to", "origin_product_ids", "coleccion_search", "display_origin_search")
     def _onchange_origin_sale_filters(self):
         for w in self:
             w.warning_msg = _("Filtros cambiados. Pulsa 'Buscar' para recalcular.")

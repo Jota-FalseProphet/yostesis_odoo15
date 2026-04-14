@@ -9,9 +9,11 @@
 
             <xpath expr="//field[@name='date_planned_start']" position="attributes">
                 <attribute name="string">Fecha ini prev OF</attribute>
+                <attribute name="widget">date</attribute>
             </xpath>
             <xpath expr="//field[@name='date_planned_start']" position="after">
-                <field name="sale_commitment_date" optional="show" widget="date"/>
+                <field name="origin_date_expected" optional="show" widget="date"/>
+                <field name="sale_commitment_date" optional="hide" widget="date"/>
             </xpath>
 
             <xpath expr="//field[@name='product_id']" position="replace"/>
@@ -34,10 +36,10 @@
 
             <xpath expr="//field[@name='origin']" position="replace"/>
             <xpath expr="//field[@name='product_uom_id']" position="after">
-                <field name="origin" optional="show"/>
-                <field name="origin_sale" string="Origen venta" optional="hide"/>
-                <field name="origin_purchase_id" string="Origen compra" optional="hide"/>
-                <field name="display_origin" string="Origen" optional="show"/>
+                <field name="origin" string="Origen Inmediato" optional="show"/>
+                <field name="origin_sale" string="Origen venta" invisible="1"/>
+                <field name="origin_purchase_id" string="Origen compra" invisible="1"/>
+                <field name="display_origin_name" string="Origen Absoluto" optional="show"/>
                 <field name="origin_product_id" string="Producto Origen" optional="show"/>
             </xpath>
 
@@ -104,23 +106,29 @@
         <field name="inherit_id" ref="mrp.view_mrp_production_filter"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='origin']" position="after">
-                <field name="origin_sale" string="Pedido de venta"/>
-                <field name="origin_purchase_id" string="Pedido de compra"/>
+                <field name="product_id" string="Modelo"
+                       filter_domain="['|', '|',
+                           ('product_id.product_tmpl_id.code_prefix', 'ilike', self),
+                           ('sale_line_id.product_id.product_tmpl_id.code_prefix', 'ilike', self),
+                           ('origin_product_id.product_tmpl_id.code_prefix', 'ilike', self)]"/>
+                <field name="product_id" string="Colección"
+                       filter_domain="['|',
+                           ('product_id.product_tmpl_id.x_studio_coleccion', 'ilike', self),
+                           ('origin_product_id.product_tmpl_id.x_studio_coleccion', 'ilike', self)]"/>
+                <field name="display_origin_name" string="Origen Absoluto"/>
                 <field name="origin_product_id" string="Producto Origen"/>
-                <field name="origin_production_id" string="OF origen"/>
+                <field name="origin_production_id" string="OF origen" invisible="1"/>
             </xpath>
             <xpath expr="//filter[@name='filter_date_planned_start']" position="after">
-                <filter name="filter_sale_commitment_date" string="Fecha ent prev PV" date="sale_commitment_date"/>
+                <filter name="filter_origin_date_expected" string="Fecha ent prev" date="origin_date_expected"/>
             </xpath>
             <xpath expr="//filter[@name='scheduled_date']" position="attributes">
                 <attribute name="string">Fecha ini prev OF</attribute>
             </xpath>
             <xpath expr="//filter[@name='scheduled_date']" position="after">
-                <filter string="Fecha ent prev PV" name="groupby_sale_commitment_date" domain="[]" context="{'group_by': 'sale_commitment_date'}"/>
-                <filter string="Pedido de venta" name="groupby_origin_sale" domain="[]" context="{'group_by': 'origin_sale'}"/>
-                <filter string="Pedido de compra" name="groupby_origin_purchase_id" domain="[]" context="{'group_by': 'origin_purchase_id'}"/>
+                <filter string="Fecha ent prev" name="groupby_origin_date_expected" domain="[]" context="{'group_by': 'origin_date_expected'}"/>
+                <filter string="Origen Absoluto" name="groupby_display_origin" domain="[]" context="{'group_by': 'display_origin_name'}"/>
                 <filter string="Producto Origen" name="groupby_origin_product_id" domain="[]" context="{'group_by': 'origin_product_id'}"/>
-                <filter string="OF origen" name="groupby_origin_production_id" domain="[]" context="{'group_by': 'origin_production_id'}"/>
             </xpath>
         </field>
     </record>

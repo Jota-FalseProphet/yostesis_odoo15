@@ -8,7 +8,7 @@ class MrpProduction(models.Model):
     _inherit = "mrp.production"
 
     display_origin = fields.Reference(
-        string="Origen",
+        string="Origen Absoluto",
         selection=[
             ('sale.order', 'Pedido de venta'),
             ('purchase.order', 'Pedido de compra'),
@@ -17,6 +17,14 @@ class MrpProduction(models.Model):
         compute="_compute_display_origin",
         store=True,
         readonly=True,
+    )
+
+    display_origin_name = fields.Char(
+        string="Origen Absoluto",
+        compute="_compute_display_origin",
+        store=True,
+        readonly=True,
+        index=True,
     )
 
     origin_product_id = fields.Many2one(
@@ -31,6 +39,13 @@ class MrpProduction(models.Model):
     sale_commitment_date = fields.Datetime(
         string="Fecha ent prev PV",
         related="origin_sale.fecha_entrega_prevista",
+        store=True,
+        readonly=True,
+    )
+
+    origin_date_expected = fields.Datetime(
+        string="Fecha ent prev",
+        compute="_compute_origin_date_expected",
         store=True,
         readonly=True,
     )
@@ -80,7 +95,41 @@ class MrpProduction(models.Model):
         index=True,
     )
 
-    @api.depends('move_finished_ids.move_dest_ids')
+    @api.model_create_multi
+    def create(self, vals_list):
+        mos = super().create(vals_list)
+        # Cuando se crea una MO de subcontratación, las OFs aguas arriba que
+        # alimentan sus move_raw_ids ya están confirmadas y su compute de
+        # origen no se reevalúa por sí solo. Forzamos el recompute aquí para
+        # capturar el origen de compra (Abastecimiento Manual) que solo es
+        # visible una vez existe la cadena completa de moves.
+        sbc = mos.filtered(
+            lambda m: m.bom_id and m.bom_id.type == 'subcontract'
+        )
+        if sbc:
+            upstream = sbc.move_raw_ids.move_orig_ids.production_id
+            upstream |= sbc.move_raw_ids.move_orig_ids.move_orig_ids.production_id
+            empty = upstream.filtered(
+                lambda m: m.state != 'cancel' and not m.display_origin
+            )
+            if empty:
+                _logger.info(
+                    'Recomputing origin for %d upstream MOs after SBC create: %s',
+                    len(empty), empty.mapped('name'),
+                )
+                empty._compute_origin_sale()
+                empty.flush([
+                    'origin_sale', 'origin_product_id', 'origin_production_id',
+                    'sale_line_id', 'origin_purchase_id', 'origin_purchase_line_id',
+                    'display_origin', 'display_origin_name',
+                ])
+        return mos
+
+    @api.depends(
+        'move_finished_ids.move_dest_ids',
+        'move_finished_ids.move_dest_ids.raw_material_production_id',
+        'move_raw_ids.move_orig_ids',
+    )
     def _compute_origin_sale(self):
         for record in self:
             sale, product, root_mo, sale_line = record._find_origin_info()
@@ -90,11 +139,11 @@ class MrpProduction(models.Model):
             record.sale_line_id = sale_line
 
             # Si no se encontró origen de venta, buscar origen de compra
-            if not sale and not product:
+            if not sale:
                 po, po_line = record._find_purchase_origin()
                 record.origin_purchase_id = po
                 record.origin_purchase_line_id = po_line
-                if po_line:
+                if po_line and not product:
                     record.origin_product_id = po_line.product_id
             else:
                 record.origin_purchase_id = False
@@ -109,30 +158,89 @@ class MrpProduction(models.Model):
                 rec.display_origin = rec.origin_purchase_id
             elif rec.origin_production_id:
                 rec.display_origin = rec.origin_production_id
+            elif rec.id:
+                # OF raíz manual sin venta ni compra: ella misma es el origen
+                rec.display_origin = rec
             else:
                 rec.display_origin = False
+            rec.display_origin_name = rec.display_origin.display_name if rec.display_origin else False
+
+    @api.depends(
+        'origin_sale', 'origin_sale.commitment_date',
+        'origin_purchase_id', 'origin_purchase_id.date_planned',
+        'origin_production_id', 'origin_production_id.date_planned_start',
+        'date_planned_start',
+    )
+    def _compute_origin_date_expected(self):
+        for rec in self:
+            if rec.origin_sale:
+                rec.origin_date_expected = rec.origin_sale.commitment_date
+            elif rec.origin_purchase_id:
+                rec.origin_date_expected = rec.origin_purchase_id.date_planned
+            elif rec.origin_production_id:
+                rec.origin_date_expected = rec.origin_production_id.date_planned_start
+            else:
+                # OF raíz sin venta ni compra: ella misma es el origen
+                rec.origin_date_expected = rec.date_planned_start
 
     def action_confirm(self):
         result = super().action_confirm()
-        empty = self.filtered(
-            lambda m: m.state != 'cancel' and not m.origin_sale and not m.origin_product_id
-        )
-        if empty:
+        # Recompute SIEMPRE después de super(): solo en este punto el grafo
+        # de moves está completo (move_dest_ids, raw_material_production_id
+        # y eventuales SBC MOs). Si confiamos en el compute lazy, puede
+        # haberse calculado antes con la cadena incompleta y haber
+        # almacenado un valor incorrecto pero no vacío (típico cuando una
+        # SO tiene varias líneas de productos similares).
+        todo = self.filtered(lambda m: m.state != 'cancel')
+        if todo:
             _logger.info(
                 'Recomputing origin_sale on confirm for %d MOs: %s',
-                len(empty),
-                empty.mapped('name'),
+                len(todo),
+                todo.mapped('name'),
             )
-            empty._compute_origin_sale()
-            empty.flush([
+            todo._compute_origin_sale()
+            todo.flush([
                 'origin_sale', 'origin_product_id', 'origin_production_id',
                 'sale_line_id', 'origin_purchase_id', 'origin_purchase_line_id',
                 'display_origin',
             ])
         return result
 
+    def _find_sale_via_moves(self):
+        """Walk forward from finished moves through the move graph until
+        finding a stock.move with sale_line_id. This is the most reliable
+        way to disambiguate when an SO has several lines that share the
+        same intermediate picking (subcontracting receipts with multiple
+        product variants).
+        """
+        self.ensure_one()
+        visited = set()
+        moves = self.move_finished_ids
+        for _depth in range(10):
+            next_moves = self.env['stock.move']
+            for m in moves:
+                if m.id in visited:
+                    continue
+                visited.add(m.id)
+                if m.sale_line_id:
+                    return m.sale_line_id
+                next_moves |= m.move_dest_ids
+                if m.raw_material_production_id:
+                    next_moves |= m.raw_material_production_id.move_finished_ids
+            new_ids = set(next_moves.ids) - visited
+            if not new_ids:
+                break
+            moves = self.env['stock.move'].browse(list(new_ids))
+        return False
+
     def _find_origin_info(self):
         self.ensure_one()
+
+        # Preferir el grafo de moves: es preciso cuando hay varias líneas en
+        # la SO que comparten un mismo picking intermedio.
+        sale_line = self._find_sale_via_moves()
+        if sale_line:
+            return sale_line.order_id, sale_line.product_id, False, sale_line
 
         result = self._follow_origin_chain()
         if result:
@@ -157,9 +265,17 @@ class MrpProduction(models.Model):
             pass
 
         root = self._find_root_production()
+        if root and root.origin_sale:
+            return root.origin_sale, root.origin_product_id or root.product_id, False, root.sale_line_id
+
+        # Antes de quedarnos con la root sin venta, probar origen de compra
+        # (caso típico: subcontratación con "Abastecimiento Manual" y sin SO).
+        po, po_line = self._find_purchase_origin()
+        if po:
+            product = po_line.product_id if po_line else self.product_id
+            return False, product, False, False
+
         if root:
-            if root.origin_sale:
-                return root.origin_sale, root.origin_product_id or root.product_id, False, root.sale_line_id
             return False, root.product_id, root, False
 
         if self.move_raw_ids.move_orig_ids.production_id:

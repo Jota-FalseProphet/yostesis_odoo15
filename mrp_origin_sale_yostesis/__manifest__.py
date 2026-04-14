@@ -1,6 +1,6 @@
 {
     "name": "MRP Origin Sale (Yostesis)",
-    "version": "15.0.2.3.1",
+    "version": "15.0.2.7.0",
     "summary": "Stored origin_sale/origin_purchase on MOs with recompute on confirm and receipt validation",
     "author": "Yostesis",
     "website": "https://yostesis.com",
