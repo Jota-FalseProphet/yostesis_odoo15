@@ -63,6 +63,14 @@ class AccountMove(models.Model):
             else:
                 rec.multicompany_reporting_currency_rate = 1.0
 
+    financing_bank = fields.Selection(
+        [('caixa_popular', 'Caixa Popular')],
+        string='Banco financiador',
+    )
+    financing_maturity_date = fields.Date(
+        string='Fecha vencimiento financiación',
+    )
+
     @api.depends(
         'amount_untaxed_signed',
         'amount_untaxed',
