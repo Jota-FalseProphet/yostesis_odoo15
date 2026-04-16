@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="edit_project_asistecs" model="ir.ui.view">
+        <field name="name">project.project.form.asistecs</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='settings']/group/group[1]" position="inside">
+                <field name="is_asistecs_project"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

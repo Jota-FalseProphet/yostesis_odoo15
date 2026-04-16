@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_task_form2_asistecs" model="ir.ui.view">
+        <field name="name">project.task.form.asistecs</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page name="asistecs_documentation_page"
+                      string="Documentacion"
+                      attrs="{'invisible': [('is_asistecs_project', '=', False)]}">
+                    <field name="is_asistecs_project" invisible="1"/>
+                    <field name="asistecs_documentation"
+                           nolabel="1"
+                           placeholder="Resolucion, pasos tecnicos, decisiones..."/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
