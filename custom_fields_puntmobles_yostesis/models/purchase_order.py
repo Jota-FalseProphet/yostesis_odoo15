@@ -1,4 +1,4 @@
-from odoo import models, fields, _
+from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
 
@@ -6,8 +6,16 @@ from odoo.exceptions import UserError
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
-    # Añadimos tracking al campo date_planned (Fecha de recepción)
+    # Añadimos tracking al campo date_planned (Fecha de recepción → "Fecha prevista")
     date_planned = fields.Datetime(tracking=True)
+
+    @api.depends('order_line.date_planned')
+    def _compute_date_planned(self):
+        # En pedidos confirmados (purchase/done) no recalculamos date_planned
+        # automáticamente al cambiar líneas/precios/cantidades. El usuario puede
+        # seguir editándolo manualmente desde la vista (readonly=False).
+        confirmed = self.filtered(lambda o: o.state in ('purchase', 'done'))
+        super(PurchaseOrder, self - confirmed)._compute_date_planned()
 
     def button_confirm(self):
         for order in self:

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Formulario: renombrar etiqueta "Fecha recepción" por "Fecha prevista" -->
+    <record id="purchase_order_form_fecha_prevista" model="ir.ui.view">
+        <field name="name">purchase.order.form.fecha.prevista</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//label[@for='date_planned']" position="attributes">
+                <attribute name="string">Fecha prevista</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Árbol RFQ/PO básico: mover date_planned justo antes de company_id y renombrar -->
+    <record id="purchase_order_tree_fecha_prevista" model="ir.ui.view">
+        <field name="name">purchase.order.tree.fecha.prevista</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[@name='date_planned']" position="replace"/>
+            <xpath expr="//tree/field[@name='company_id']" position="before">
+                <field name="date_planned" string="Fecha prevista" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Árbol KPIs: mover date_planned antes de company_id y renombrar -->
+    <record id="purchase_order_kpis_tree_fecha_prevista" model="ir.ui.view">
+        <field name="name">purchase.order.kpis.tree.fecha.prevista</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[@name='date_planned']" position="replace"/>
+            <xpath expr="//tree/field[@name='company_id']" position="before">
+                <field name="date_planned" string="Fecha prevista" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Árbol de facturación (view_tree): mover date_planned antes de company_id y renombrar -->
+    <record id="purchase_order_view_tree_fecha_prevista" model="ir.ui.view">
+        <field name="name">purchase.order.view.tree.fecha.prevista</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree/field[@name='date_planned']" position="replace"/>
+            <xpath expr="//tree/field[@name='company_id']" position="before">
+                <field name="date_planned" string="Fecha prevista" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Búsqueda principal de RFQ/PO: añadir Fecha prevista en barra, filtros y group_by -->
+    <record id="view_purchase_order_filter_fecha_prevista" model="ir.ui.view">
+        <field name="name">purchase.order.list.select.fecha.prevista</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.view_purchase_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search/field[@name='origin']" position="after">
+                <field name="date_planned" string="Fecha prevista"/>
+            </xpath>
+            <xpath expr="//search/filter[@name='order_date'][not(@context)]" position="after">
+                <filter name="planned_date" string="Fecha prevista" date="date_planned"/>
+            </xpath>
+            <xpath expr="//search/group/filter[@name='order_date']" position="after">
+                <filter string="Fecha prevista" name="planned_date" domain="[]" context="{'group_by': 'date_planned'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Búsqueda secundaria (purchase_order_view_search): añadir Fecha prevista -->
+    <record id="purchase_order_view_search_fecha_prevista" model="ir.ui.view">
+        <field name="name">purchase.order.select.fecha.prevista</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_view_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search/field[@name='product_id']" position="after">
+                <field name="date_planned" string="Fecha prevista"/>
+            </xpath>
+            <xpath expr="//search/filter[@name='order_date'][not(@context)]" position="after">
+                <filter name="planned_date" string="Fecha prevista" date="date_planned"/>
+            </xpath>
+            <xpath expr="//search/group/filter[@name='order_date']" position="after">
+                <filter string="Fecha prevista" name="planned_date" domain="[]" context="{'group_by': 'date_planned'}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

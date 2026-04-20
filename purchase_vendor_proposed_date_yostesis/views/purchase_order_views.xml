@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="purchase_order_form_vendor_proposed_date" model="ir.ui.view">
+        <field name="name">purchase.order.form.vendor.proposed.date</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//header/button[@name='action_create_invoice'][1]" position="before">
+                <button name="action_apply_vendor_proposed_datesy"
+                        type="object"
+                        string="Aplicar fechas propuestas"
+                        class="oe_highlight"
+                        attrs="{'invisible': [('has_vendor_proposed_datesy', '=', False)]}"/>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/tree/field[@name='date_planned']" position="after">
+                <field name="date_planned_vendory"
+                       readonly="1"
+                       string="⚠ Fecha propuesta proveedor"
+                       decoration-warning="date_planned_vendory != False"
+                       attrs="{'column_invisible': [('parent.has_vendor_proposed_datesy', '=', False)]}"/>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/form//field[@name='date_planned']" position="after">
+                <field name="date_planned_vendory"
+                       readonly="1"
+                       attrs="{'invisible': [('date_planned_vendory', '=', False)]}"/>
+            </xpath>
+
+            <xpath expr="//field[@name='state']" position="before">
+                <field name="has_vendor_proposed_datesy" invisible="1"/>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>
