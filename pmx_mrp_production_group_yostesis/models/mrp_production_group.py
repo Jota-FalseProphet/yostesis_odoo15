@@ -632,68 +632,72 @@ class MrpProductionGroup(models.Model):
 
             return vals_list
 
-        Bom = self.env["mrp.bom"]
-        bom = mo.bom_id
-        if not bom:
-            bom = Bom.search([
-                ("type", "=", "normal"),
-                ("product_tmpl_id", "=", mo.product_id.product_tmpl_id.id),
-                ("company_id", "in", [False, mo.company_id.id]),
-                "|",
-                ("product_id", "=", False),
-                ("product_id", "=", mo.product_id.id),
-            ], order="product_id desc, sequence, id", limit=1)
-
-        if not bom:
-            return []
-
-        bom_qty = bom.product_qty or 1.0
-        mo_qty_in_bom_uom = mo.product_uom_id._compute_quantity(mo.product_qty, bom.product_uom_id)
-        factor = mo_qty_in_bom_uom / bom_qty
-
-        loc_id = src_loc_id or False
-
-        for line in bom.bom_line_ids:
-            if getattr(line, "display_type", False):
-                continue
-            if not line.product_id or not line.product_uom_id:
-                continue
-            qty = (line.product_qty or 0.0) * factor
-            if qty <= 0:
-                continue
-
-            uom = line.product_uom_id
-
-            if unit_category_id and uom.category_id.id == unit_category_id and is_almost_int(qty):
-                n = int(round(qty))
-                if n > 0:
-                    for _i in range(n):
-                        vals = {
-                            "group_id": self.id,
-                            "production_id": mo.id,
-                            "product_id": line.product_id.id,
-                            "product_uom_id": uom.id,
-                            "qty": 1.0,
-                            "location_id": loc_id or False,
-                            "excluded": False,
-                        }
-                        if has_move_id:
-                            vals["move_id"] = False
-                        vals_list.append(vals)
-            else:
-                vals = {
-                    "group_id": self.id,
-                    "production_id": mo.id,
-                    "product_id": line.product_id.id,
-                    "product_uom_id": uom.id,
-                    "qty": qty,
-                    "location_id": loc_id or False,
-                    "excluded": False,
-                }
-                if has_move_id:
-                    vals["move_id"] = False
-                vals_list.append(vals)
         return vals_list
+
+        # Fallback desactivado: si la OF no tiene move_raw_ids, el grupo
+        # no debe inventarse componentes desde la lista de materiales jeje
+        # Bom = self.env["mrp.bom"]
+        # bom = mo.bom_id
+        # if not bom:
+        #     bom = Bom.search([
+        #         ("type", "=", "normal"),
+        #         ("product_tmpl_id", "=", mo.product_id.product_tmpl_id.id),
+        #         ("company_id", "in", [False, mo.company_id.id]),
+        #         "|",
+        #         ("product_id", "=", False),
+        #         ("product_id", "=", mo.product_id.id),
+        #     ], order="product_id desc, sequence, id", limit=1)
+        #
+        # if not bom:
+        #     return []
+        #
+        # bom_qty = bom.product_qty or 1.0
+        # mo_qty_in_bom_uom = mo.product_uom_id._compute_quantity(mo.product_qty, bom.product_uom_id)
+        # factor = mo_qty_in_bom_uom / bom_qty
+        #
+        # loc_id = src_loc_id or False
+        #
+        # for line in bom.bom_line_ids:
+        #     if getattr(line, "display_type", False):
+        #         continue
+        #     if not line.product_id or not line.product_uom_id:
+        #         continue
+        #     qty = (line.product_qty or 0.0) * factor
+        #     if qty <= 0:
+        #         continue
+        #
+        #     uom = line.product_uom_id
+        #
+        #     if unit_category_id and uom.category_id.id == unit_category_id and is_almost_int(qty):
+        #         n = int(round(qty))
+        #         if n > 0:
+        #             for _i in range(n):
+        #                 vals = {
+        #                     "group_id": self.id,
+        #                     "production_id": mo.id,
+        #                     "product_id": line.product_id.id,
+        #                     "product_uom_id": uom.id,
+        #                     "qty": 1.0,
+        #                     "location_id": loc_id or False,
+        #                     "excluded": False,
+        #                 }
+        #                 if has_move_id:
+        #                     vals["move_id"] = False
+        #                 vals_list.append(vals)
+        #     else:
+        #         vals = {
+        #             "group_id": self.id,
+        #             "production_id": mo.id,
+        #             "product_id": line.product_id.id,
+        #             "product_uom_id": uom.id,
+        #             "qty": qty,
+        #             "location_id": loc_id or False,
+        #             "excluded": False,
+        #         }
+        #         if has_move_id:
+        #             vals["move_id"] = False
+        #         vals_list.append(vals)
+        # return vals_list
 
     def _ensure_details_for_mos(self, mos):
         Detail = self.env["mrp.production.group.component.detail"].sudo()

@@ -1,6 +1,6 @@
 {
     "name": "PuntMobles - Agrupación de Órdenes de Fabricación",
-    "version": "15.0.1.6.8",
+    "version": "15.0.1.6.9",
     "category": "Manufacturing",
     "summary": "Agrupar OF con criterios y permitir incluir/quitar OF de una agrupación",
     "depends": ["web", "mrp", "product_attributes_type", "sale"],
